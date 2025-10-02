@@ -1,0 +1,14 @@
+[package]
+name = "touchpad-proto"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+prost = { workspace = true }
+
+[build-dependencies]
+cargo_metadata = { workspace = true }
+prost-build = { workspace = true }
+
+[package.metadata.touchpad-proto]
+protos_dir = "../../protos"

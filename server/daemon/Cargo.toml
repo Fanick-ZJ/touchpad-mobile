@@ -1,0 +1,10 @@
+[package]
+name = "daemon"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+clap = { workspace = true, features = ["derive"]}
+tokio = { workspace = true ,features = ["rt", "rt-multi-thread", "time", "macros"] }
+core = { workspace = true }
+tracing = { workspace = true }
