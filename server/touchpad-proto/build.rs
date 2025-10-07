@@ -1,4 +1,5 @@
 use std::{
+    env,
     io::Result,
     path::{Path, PathBuf},
 };
@@ -60,6 +61,11 @@ fn main() -> Result<()> {
         .collect::<Vec<_>>();
 
     eprintln!("proto files:{:?}", protos_list);
-    prost_build::compile_protos(&protos_list, &[protos_dir])?;
+    let out_dir = PathBuf::from(env::var("OUT_DIR").unwrap());
+    let _ = prost_reflect_build::Builder::new()
+        // 存放 protoc 生成的 FileDescriptorSet 二进制
+        .descriptor_pool("crate::DESCRIPTOR_POOL")
+        .file_descriptor_set_path(out_dir.join("touchpad.v1.bin"))
+        .compile_protos(&protos_list, &[protos_dir]);
     Ok(())
 }

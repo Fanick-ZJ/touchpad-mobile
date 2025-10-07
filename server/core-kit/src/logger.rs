@@ -25,6 +25,7 @@ pub fn init_tracing() -> WorkerGuard {
     let console_layer = fmt::layer()
         .with_ansi(false)
         .with_timer(UtcTime::rfc_3339())
+        .with_line_number(true)
         .with_filter(EnvFilter::new("info"));
 
     // 5. 合并两层并注册

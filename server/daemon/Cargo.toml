@@ -4,7 +4,8 @@ version.workspace = true
 edition.workspace = true
 
 [dependencies]
+anyhow = { workspace = true }
 clap = { workspace = true, features = ["derive"]}
-tokio = { workspace = true ,features = ["rt", "rt-multi-thread", "time", "macros"] }
-core = { workspace = true }
+tokio = { workspace = true ,features = ["rt", "rt-multi-thread", "time", "macros", "test-util"] }
+core-kit = { workspace = true }
 tracing = { workspace = true }

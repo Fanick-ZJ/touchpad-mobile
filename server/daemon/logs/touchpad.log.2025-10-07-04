@@ -1,0 +1,423 @@
+2025-10-07T04:02:28.572227905Z  INFO test: 15: Daemon started
+2025-10-07T04:02:28.572256459Z  INFO core_kit::common: 12: Certificate key file found at "/home/fanick/work/rust/touchpad/certs/certificate.pem"
+2025-10-07T04:02:28.572269734Z  INFO core_kit::common: 17: Certificate file loaded: /home/fanick/work/rust/touchpad/certs/certificate.pem
+2025-10-07T04:02:28.572321651Z  INFO core_kit::common: 29: Private key file found at "/home/fanick/work/rust/touchpad/certs/private.key.pem"
+2025-10-07T04:02:28.572637824Z  INFO core_kit::server: 69: Server configuration created successfully
+2025-10-07T04:02:28.572824975Z  INFO core_kit::server: 51: listening on 127.0.0.1:8521
+2025-10-07T04:02:28.572985856Z  INFO core_kit::server: 91: Starting server loop iteration
+2025-10-07T04:02:28.57300926Z  INFO core_kit::server: 95: No active connection, waiting for one...
+2025-10-07T04:02:28.573026272Z  INFO core_kit::server: 74: Waiting for connection...
+2025-10-07T04:02:30.036917662Z  INFO test: 27: Daemon started
+2025-10-07T04:02:30.036948059Z  INFO core_kit::common: 12: Certificate key file found at "/home/fanick/work/rust/touchpad/certs/certificate.pem"
+2025-10-07T04:02:30.036961585Z  INFO core_kit::common: 17: Certificate file loaded: /home/fanick/work/rust/touchpad/certs/certificate.pem
+2025-10-07T04:02:30.040769844Z  INFO core_kit::server: 83: Connection established, ip: Some(127.0.0.1)
+2025-10-07T04:02:31.04160015Z  INFO test: 36: Send message
+2025-10-07T04:02:31.041692904Z  INFO test: 36: Send message
+2025-10-07T04:02:31.041719123Z  INFO test: 36: Send message
+2025-10-07T04:02:31.041741024Z  INFO test: 36: Send message
+2025-10-07T04:02:31.041763677Z  INFO test: 36: Send message
+2025-10-07T04:02:31.041785808Z  INFO test: 36: Send message
+2025-10-07T04:02:31.041807088Z  INFO test: 36: Send message
+2025-10-07T04:02:31.041831895Z  INFO test: 36: Send message
+2025-10-07T04:02:31.041860118Z  INFO test: 36: Send message
+2025-10-07T04:02:31.041891947Z  INFO test: 36: Send message
+2025-10-07T04:02:31.042746489Z  INFO core_kit::server: 119: New stream accepted
+2025-10-07T04:02:31.042902742Z  INFO core_kit::server: 147: Received bytes length: 5
+2025-10-07T04:02:31.042930284Z  INFO core_kit::server: 148: Received bytes content: [72, 101, 108, 108, 111]
+2025-10-07T04:02:31.043002489Z  INFO core_kit::server: 119: New stream accepted
+2025-10-07T04:02:31.043051602Z  INFO core_kit::server: 147: Received bytes length: 5
+2025-10-07T04:02:31.043077069Z  INFO core_kit::server: 148: Received bytes content: [72, 101, 108, 108, 111]
+2025-10-07T04:02:31.043114079Z  INFO core_kit::server: 119: New stream accepted
+2025-10-07T04:02:31.043144175Z  INFO core_kit::server: 147: Received bytes length: 5
+2025-10-07T04:02:31.04316279Z  INFO core_kit::server: 148: Received bytes content: [72, 101, 108, 108, 111]
+2025-10-07T04:02:31.043189109Z  INFO core_kit::server: 119: New stream accepted
+2025-10-07T04:02:31.043215288Z  INFO core_kit::server: 147: Received bytes length: 5
+2025-10-07T04:02:31.043234524Z  INFO core_kit::server: 148: Received bytes content: [72, 101, 108, 108, 111]
+2025-10-07T04:02:31.043261114Z  INFO core_kit::server: 119: New stream accepted
+2025-10-07T04:02:31.043289327Z  INFO core_kit::server: 147: Received bytes length: 5
+2025-10-07T04:02:31.043310437Z  INFO core_kit::server: 148: Received bytes content: [72, 101, 108, 108, 111]
+2025-10-07T04:02:31.043338279Z  INFO core_kit::server: 119: New stream accepted
+2025-10-07T04:02:31.043368155Z  INFO core_kit::server: 147: Received bytes length: 5
+2025-10-07T04:02:31.043389485Z  INFO core_kit::server: 148: Received bytes content: [72, 101, 108, 108, 111]
+2025-10-07T04:02:31.04341905Z  INFO core_kit::server: 119: New stream accepted
+2025-10-07T04:02:31.043446642Z  INFO core_kit::server: 147: Received bytes length: 5
+2025-10-07T04:02:31.043464656Z  INFO core_kit::server: 148: Received bytes content: [72, 101, 108, 108, 111]
+2025-10-07T04:02:31.043489623Z  INFO core_kit::server: 119: New stream accepted
+2025-10-07T04:02:31.043515461Z  INFO core_kit::server: 147: Received bytes length: 5
+2025-10-07T04:02:31.043532183Z  INFO core_kit::server: 148: Received bytes content: [72, 101, 108, 108, 111]
+2025-10-07T04:02:31.043555316Z  INFO core_kit::server: 119: New stream accepted
+2025-10-07T04:02:31.043579922Z  INFO core_kit::server: 147: Received bytes length: 5
+2025-10-07T04:02:31.043597214Z  INFO core_kit::server: 148: Received bytes content: [72, 101, 108, 108, 111]
+2025-10-07T04:02:31.043622251Z  INFO core_kit::server: 119: New stream accepted
+2025-10-07T04:02:31.043646517Z  INFO core_kit::server: 147: Received bytes length: 5
+2025-10-07T04:02:31.043663148Z  INFO core_kit::server: 148: Received bytes content: [72, 101, 108, 108, 111]
+2025-10-07T04:03:01.045878604Z ERROR core_kit::server: 123: Connection error (maybe closed): timed out
+2025-10-07T04:03:01.046061427Z  INFO core_kit::server: 95: No active connection, waiting for one...
+2025-10-07T04:03:01.046091854Z  INFO core_kit::server: 74: Waiting for connection...
+2025-10-07T04:44:02.281323537Z  INFO test: 15: Daemon started
+2025-10-07T04:44:02.281360706Z  INFO core_kit::common: 12: Certificate key file found at "/home/fanick/work/rust/touchpad/certs/certificate.pem"
+2025-10-07T04:44:02.281376115Z  INFO core_kit::common: 17: Certificate file loaded: /home/fanick/work/rust/touchpad/certs/certificate.pem
+2025-10-07T04:44:02.281445385Z  INFO core_kit::common: 29: Private key file found at "/home/fanick/work/rust/touchpad/certs/private.key.pem"
+2025-10-07T04:44:02.28177349Z  INFO core_kit::server: 69: Server configuration created successfully
+2025-10-07T04:44:02.281996178Z  INFO core_kit::server: 51: listening on 127.0.0.1:8521
+2025-10-07T04:44:02.282149345Z  INFO core_kit::server: 91: Starting server loop iteration
+2025-10-07T04:44:02.282169783Z  INFO core_kit::server: 95: No active connection, waiting for one...
+2025-10-07T04:44:02.282186304Z  INFO core_kit::server: 74: Waiting for connection...
+2025-10-07T04:44:04.621889398Z  INFO test: 27: Daemon started
+2025-10-07T04:44:04.621920035Z  INFO core_kit::common: 12: Certificate key file found at "/home/fanick/work/rust/touchpad/certs/certificate.pem"
+2025-10-07T04:44:04.621934562Z  INFO core_kit::common: 17: Certificate file loaded: /home/fanick/work/rust/touchpad/certs/certificate.pem
+2025-10-07T04:44:04.626961958Z  INFO core_kit::server: 83: Connection established, ip: Some(127.0.0.1)
+2025-10-07T04:44:05.627552935Z  INFO test: 36: Send message
+2025-10-07T04:44:05.627709429Z  INFO test: 36: Send message
+2025-10-07T04:44:05.627760645Z  INFO test: 36: Send message
+2025-10-07T04:44:05.62782227Z  INFO test: 36: Send message
+2025-10-07T04:44:05.62787576Z  INFO test: 36: Send message
+2025-10-07T04:44:05.628027435Z  INFO test: 36: Send message
+2025-10-07T04:44:05.628141559Z  INFO test: 36: Send message
+2025-10-07T04:44:05.628177697Z  INFO test: 36: Send message
+2025-10-07T04:44:05.628206801Z  INFO test: 36: Send message
+2025-10-07T04:44:05.628246496Z  INFO test: 36: Send message
+2025-10-07T04:44:05.62850503Z ERROR core_kit::client: 89: Unexpected response from server: []
+2025-10-07T04:44:05.628548111Z ERROR core_kit::client: 89: Unexpected response from server: []
+2025-10-07T04:44:05.628572356Z ERROR core_kit::client: 89: Unexpected response from server: []
+2025-10-07T04:44:05.628601251Z ERROR core_kit::client: 89: Unexpected response from server: []
+2025-10-07T04:44:05.628625266Z ERROR core_kit::client: 89: Unexpected response from server: []
+2025-10-07T04:44:05.628652306Z ERROR core_kit::client: 89: Unexpected response from server: []
+2025-10-07T04:44:05.628677143Z ERROR core_kit::client: 89: Unexpected response from server: []
+2025-10-07T04:44:05.628705496Z ERROR core_kit::client: 89: Unexpected response from server: []
+2025-10-07T04:44:05.628735683Z ERROR core_kit::client: 89: Unexpected response from server: []
+2025-10-07T04:44:05.628764847Z ERROR core_kit::client: 89: Unexpected response from server: []
+2025-10-07T04:44:05.628793671Z ERROR core_kit::client: 89: Unexpected response from server: []
+2025-10-07T04:44:05.628876326Z ERROR core_kit::server: 135: Connection error (maybe closed): closed by peer: 0
+2025-10-07T04:44:05.62895312Z  INFO core_kit::server: 95: No active connection, waiting for one...
+2025-10-07T04:44:05.628988036Z  INFO core_kit::server: 74: Waiting for connection...
+2025-10-07T04:45:54.800210493Z  INFO test: 27: Daemon started
+2025-10-07T04:45:54.800273772Z  INFO core_kit::common: 12: Certificate key file found at "/home/fanick/work/rust/touchpad/certs/certificate.pem"
+2025-10-07T04:45:54.800316642Z  INFO core_kit::common: 17: Certificate file loaded: /home/fanick/work/rust/touchpad/certs/certificate.pem
+2025-10-07T04:45:54.805264779Z  INFO core_kit::server: 83: Connection established, ip: Some(127.0.0.1)
+2025-10-07T04:45:55.805719761Z  INFO test: 36: Send message
+2025-10-07T04:45:55.805950764Z  INFO test: 36: Send message
+2025-10-07T04:45:55.806030524Z  INFO test: 36: Send message
+2025-10-07T04:45:55.806111005Z  INFO test: 36: Send message
+2025-10-07T04:45:55.806263992Z  INFO test: 36: Send message
+2025-10-07T04:45:55.806465309Z  INFO test: 36: Send message
+2025-10-07T04:45:55.806500114Z  INFO test: 36: Send message
+2025-10-07T04:45:55.806520983Z  INFO test: 36: Send message
+2025-10-07T04:45:55.806550729Z  INFO test: 36: Send message
+2025-10-07T04:45:55.806573131Z  INFO test: 36: Send message
+2025-10-07T04:45:55.806785049Z ERROR core_kit::client: 89: Unexpected response from server: []
+2025-10-07T04:45:55.806829402Z ERROR core_kit::client: 89: Unexpected response from server: []
+2025-10-07T04:45:55.806850772Z ERROR core_kit::client: 89: Unexpected response from server: []
+2025-10-07T04:45:55.806875598Z ERROR core_kit::client: 89: Unexpected response from server: []
+2025-10-07T04:45:55.806894343Z ERROR core_kit::client: 89: Unexpected response from server: []
+2025-10-07T04:45:55.806920322Z ERROR core_kit::client: 89: Unexpected response from server: []
+2025-10-07T04:45:55.806938096Z ERROR core_kit::client: 89: Unexpected response from server: []
+2025-10-07T04:45:55.806957161Z ERROR core_kit::client: 89: Unexpected response from server: []
+2025-10-07T04:45:55.806979974Z ERROR core_kit::client: 89: Unexpected response from server: []
+2025-10-07T04:45:55.806996585Z ERROR core_kit::client: 89: Unexpected response from server: []
+2025-10-07T04:45:55.807020069Z ERROR core_kit::client: 89: Unexpected response from server: []
+2025-10-07T04:45:55.807531288Z ERROR core_kit::server: 135: Connection error (maybe closed): closed by peer: 0
+2025-10-07T04:45:55.807615325Z  INFO core_kit::server: 95: No active connection, waiting for one...
+2025-10-07T04:45:55.807635573Z  INFO core_kit::server: 74: Waiting for connection...
+2025-10-07T04:47:31.138575902Z  INFO test: 27: Daemon started
+2025-10-07T04:47:31.138605267Z  INFO core_kit::common: 12: Certificate key file found at "/home/fanick/work/rust/touchpad/certs/certificate.pem"
+2025-10-07T04:47:31.138618632Z  INFO core_kit::common: 17: Certificate file loaded: /home/fanick/work/rust/touchpad/certs/certificate.pem
+2025-10-07T04:47:31.143499804Z  INFO core_kit::server: 83: Connection established, ip: Some(127.0.0.1)
+2025-10-07T04:47:32.144598953Z  INFO test: 36: Send message
+2025-10-07T04:47:32.144715532Z  INFO test: 36: Send message
+2025-10-07T04:47:32.14474653Z  INFO test: 36: Send message
+2025-10-07T04:47:32.144791324Z  INFO test: 36: Send message
+2025-10-07T04:47:32.144814908Z  INFO test: 36: Send message
+2025-10-07T04:47:32.144839053Z  INFO test: 36: Send message
+2025-10-07T04:47:32.144870693Z  INFO test: 36: Send message
+2025-10-07T04:47:32.144907632Z  INFO test: 36: Send message
+2025-10-07T04:47:32.144936817Z  INFO test: 36: Send message
+2025-10-07T04:47:32.144971392Z  INFO test: 36: Send message
+2025-10-07T04:47:32.145694137Z  INFO core_kit::server: 119: New stream accepted
+2025-10-07T04:47:32.145843086Z  INFO core_kit::server: 169: Received bytes length: 5
+2025-10-07T04:47:32.145912406Z  INFO core_kit::server: 174: Received bytes content: [72, 101, 108, 108, 111]
+2025-10-07T04:47:32.146030537Z  INFO core_kit::server: 119: New stream accepted
+2025-10-07T04:47:32.146097783Z  INFO core_kit::server: 169: Received bytes length: 5
+2025-10-07T04:47:32.146142958Z  INFO core_kit::server: 174: Received bytes content: [72, 101, 108, 108, 111]
+2025-10-07T04:47:32.146214232Z  INFO core_kit::server: 119: New stream accepted
+2025-10-07T04:47:32.146276729Z  INFO core_kit::server: 169: Received bytes length: 5
+2025-10-07T04:47:32.146320942Z  INFO core_kit::server: 174: Received bytes content: [72, 101, 108, 108, 111]
+2025-10-07T04:47:32.146407835Z  INFO core_kit::server: 119: New stream accepted
+2025-10-07T04:47:32.146471374Z  INFO core_kit::server: 169: Received bytes length: 5
+2025-10-07T04:47:32.146515126Z  INFO core_kit::server: 174: Received bytes content: [72, 101, 108, 108, 111]
+2025-10-07T04:47:32.146577453Z  INFO core_kit::server: 119: New stream accepted
+2025-10-07T04:47:32.146640601Z  INFO core_kit::server: 169: Received bytes length: 5
+2025-10-07T04:47:32.146689042Z  INFO core_kit::server: 174: Received bytes content: [72, 101, 108, 108, 111]
+2025-10-07T04:47:32.146790703Z  INFO core_kit::server: 119: New stream accepted
+2025-10-07T04:47:32.146857708Z  INFO core_kit::server: 169: Received bytes length: 5
+2025-10-07T04:47:32.146880661Z  INFO core_kit::server: 174: Received bytes content: [72, 101, 108, 108, 111]
+2025-10-07T04:47:32.146927178Z  INFO core_kit::server: 119: New stream accepted
+2025-10-07T04:47:32.146959229Z  INFO core_kit::server: 169: Received bytes length: 5
+2025-10-07T04:47:32.146971502Z  INFO core_kit::server: 174: Received bytes content: [72, 101, 108, 108, 111]
+2025-10-07T04:47:32.14699757Z  INFO core_kit::server: 119: New stream accepted
+2025-10-07T04:47:32.147022136Z  INFO core_kit::server: 169: Received bytes length: 5
+2025-10-07T04:47:32.147037886Z  INFO core_kit::server: 174: Received bytes content: [72, 101, 108, 108, 111]
+2025-10-07T04:47:32.147054427Z  INFO core_kit::server: 119: New stream accepted
+2025-10-07T04:47:32.147074314Z  INFO core_kit::server: 169: Received bytes length: 5
+2025-10-07T04:47:32.14708795Z  INFO core_kit::server: 174: Received bytes content: [72, 101, 108, 108, 111]
+2025-10-07T04:47:32.147104651Z  INFO core_kit::server: 119: New stream accepted
+2025-10-07T04:47:32.147123947Z  INFO core_kit::server: 169: Received bytes length: 5
+2025-10-07T04:47:32.147138074Z  INFO core_kit::server: 174: Received bytes content: [72, 101, 108, 108, 111]
+2025-10-07T04:48:02.175246826Z ERROR core_kit::server: 135: Connection error (maybe closed): timed out
+2025-10-07T04:48:02.175487487Z  INFO core_kit::server: 95: No active connection, waiting for one...
+2025-10-07T04:48:02.175537321Z  INFO core_kit::server: 74: Waiting for connection...
+2025-10-07T04:54:13.148472044Z  INFO test: 27: Daemon started
+2025-10-07T04:54:13.148503574Z  INFO core_kit::common: 12: Certificate key file found at "/home/fanick/work/rust/touchpad/certs/certificate.pem"
+2025-10-07T04:54:13.14851744Z  INFO core_kit::common: 17: Certificate file loaded: /home/fanick/work/rust/touchpad/certs/certificate.pem
+2025-10-07T04:54:13.152846316Z  INFO core_kit::server: 83: Connection established, ip: Some(127.0.0.1)
+2025-10-07T04:54:14.153739199Z  INFO test: 36: Send message
+2025-10-07T04:54:14.153892456Z  INFO test: 36: Send message
+2025-10-07T04:54:14.153941418Z  INFO test: 36: Send message
+2025-10-07T04:54:14.154017891Z  INFO test: 36: Send message
+2025-10-07T04:54:14.154071351Z  INFO test: 36: Send message
+2025-10-07T04:54:14.154119712Z  INFO test: 36: Send message
+2025-10-07T04:54:14.154199542Z  INFO test: 36: Send message
+2025-10-07T04:54:14.154252862Z  INFO test: 36: Send message
+2025-10-07T04:54:14.154333944Z  INFO test: 36: Send message
+2025-10-07T04:54:14.154409185Z  INFO test: 36: Send message
+2025-10-07T04:54:14.155107985Z  INFO core_kit::server: 119: New stream accepted
+2025-10-07T04:54:14.155186662Z  INFO core_kit::server: 169: Received bytes length: 5
+2025-10-07T04:54:14.155208233Z  INFO core_kit::server: 174: Received bytes content: [72, 101, 108, 108, 111]
+2025-10-07T04:54:14.155253798Z  INFO core_kit::server: 119: New stream accepted
+2025-10-07T04:54:14.155279597Z  INFO core_kit::server: 169: Received bytes length: 5
+2025-10-07T04:54:14.155296629Z  INFO core_kit::server: 174: Received bytes content: [72, 101, 108, 108, 111]
+2025-10-07T04:54:14.155326455Z  INFO core_kit::server: 119: New stream accepted
+2025-10-07T04:54:14.155351992Z  INFO core_kit::server: 169: Received bytes length: 5
+2025-10-07T04:54:14.155378743Z  INFO core_kit::server: 174: Received bytes content: [72, 101, 108, 108, 111]
+2025-10-07T04:54:14.155405082Z  INFO core_kit::server: 119: New stream accepted
+2025-10-07T04:54:14.155430259Z  INFO core_kit::server: 169: Received bytes length: 5
+2025-10-07T04:54:14.155448032Z  INFO core_kit::server: 174: Received bytes content: [72, 101, 108, 108, 111]
+2025-10-07T04:54:14.155473881Z  INFO core_kit::server: 119: New stream accepted
+2025-10-07T04:54:14.155499609Z  INFO core_kit::server: 169: Received bytes length: 5
+2025-10-07T04:54:14.155517903Z  INFO core_kit::server: 174: Received bytes content: [72, 101, 108, 108, 111]
+2025-10-07T04:54:14.155545946Z  INFO core_kit::server: 119: New stream accepted
+2025-10-07T04:54:14.155570232Z  INFO core_kit::server: 169: Received bytes length: 5
+2025-10-07T04:54:14.155587694Z  INFO core_kit::server: 174: Received bytes content: [72, 101, 108, 108, 111]
+2025-10-07T04:54:14.155615657Z  INFO core_kit::server: 119: New stream accepted
+2025-10-07T04:54:14.155640784Z  INFO core_kit::server: 169: Received bytes length: 5
+2025-10-07T04:54:14.155658257Z  INFO core_kit::server: 174: Received bytes content: [72, 101, 108, 108, 111]
+2025-10-07T04:54:14.155683634Z  INFO core_kit::server: 119: New stream accepted
+2025-10-07T04:54:14.155707759Z  INFO core_kit::server: 169: Received bytes length: 5
+2025-10-07T04:54:14.155724421Z  INFO core_kit::server: 174: Received bytes content: [72, 101, 108, 108, 111]
+2025-10-07T04:54:14.155749918Z  INFO core_kit::server: 119: New stream accepted
+2025-10-07T04:54:14.155773593Z  INFO core_kit::server: 169: Received bytes length: 5
+2025-10-07T04:54:14.15579349Z  INFO core_kit::server: 174: Received bytes content: [72, 101, 108, 108, 111]
+2025-10-07T04:54:14.155821503Z  INFO core_kit::server: 119: New stream accepted
+2025-10-07T04:54:14.155849696Z  INFO core_kit::server: 169: Received bytes length: 5
+2025-10-07T04:54:14.155866417Z  INFO core_kit::server: 174: Received bytes content: [72, 101, 108, 108, 111]
+2025-10-07T04:54:43.71454287Z  INFO test: 27: Daemon started
+2025-10-07T04:54:43.714573377Z  INFO core_kit::common: 12: Certificate key file found at "/home/fanick/work/rust/touchpad/certs/certificate.pem"
+2025-10-07T04:54:43.714587123Z  INFO core_kit::common: 17: Certificate file loaded: /home/fanick/work/rust/touchpad/certs/certificate.pem
+2025-10-07T04:54:44.183917431Z ERROR core_kit::server: 135: Connection error (maybe closed): timed out
+2025-10-07T04:54:44.184149576Z  INFO core_kit::server: 95: No active connection, waiting for one...
+2025-10-07T04:54:44.184209438Z  INFO core_kit::server: 74: Waiting for connection...
+2025-10-07T04:54:44.18839718Z  INFO core_kit::server: 83: Connection established, ip: Some(127.0.0.1)
+2025-10-07T04:54:45.19052595Z  INFO test: 36: Send message
+2025-10-07T04:54:45.190693514Z  INFO test: 36: Send message
+2025-10-07T04:54:45.19073376Z  INFO test: 36: Send message
+2025-10-07T04:54:45.190770208Z  INFO test: 36: Send message
+2025-10-07T04:54:45.190836502Z  INFO test: 36: Send message
+2025-10-07T04:54:45.190882639Z  INFO test: 36: Send message
+2025-10-07T04:54:45.190930038Z  INFO test: 36: Send message
+2025-10-07T04:54:45.190970133Z  INFO test: 36: Send message
+2025-10-07T04:54:45.191004657Z  INFO test: 36: Send message
+2025-10-07T04:54:45.191054441Z  INFO test: 36: Send message
+2025-10-07T04:54:45.192108798Z  INFO core_kit::server: 119: New stream accepted
+2025-10-07T04:54:45.192250203Z  INFO core_kit::server: 169: Received bytes length: 5
+2025-10-07T04:54:45.192299225Z  INFO core_kit::server: 174: Received bytes content: [72, 101, 108, 108, 111]
+2025-10-07T04:54:45.192661824Z  INFO core_kit::server: 119: New stream accepted
+2025-10-07T04:54:45.192835069Z  INFO core_kit::server: 169: Received bytes length: 5
+2025-10-07T04:54:45.192969812Z  INFO core_kit::server: 174: Received bytes content: [72, 101, 108, 108, 111]
+2025-10-07T04:54:45.193052056Z  INFO core_kit::server: 119: New stream accepted
+2025-10-07T04:54:45.193138648Z  INFO core_kit::server: 169: Received bytes length: 5
+2025-10-07T04:54:45.19318197Z  INFO core_kit::server: 174: Received bytes content: [72, 101, 108, 108, 111]
+2025-10-07T04:54:45.193214921Z  INFO core_kit::server: 119: New stream accepted
+2025-10-07T04:54:45.193241632Z  INFO core_kit::server: 169: Received bytes length: 5
+2025-10-07T04:54:45.193255247Z  INFO core_kit::server: 174: Received bytes content: [72, 101, 108, 108, 111]
+2025-10-07T04:54:45.193275906Z  INFO core_kit::server: 119: New stream accepted
+2025-10-07T04:54:45.193296084Z  INFO core_kit::server: 169: Received bytes length: 5
+2025-10-07T04:54:45.193309469Z  INFO core_kit::server: 174: Received bytes content: [72, 101, 108, 108, 111]
+2025-10-07T04:54:45.193334936Z  INFO core_kit::server: 119: New stream accepted
+2025-10-07T04:54:45.19337395Z  INFO core_kit::server: 169: Received bytes length: 5
+2025-10-07T04:54:45.193394218Z  INFO core_kit::server: 174: Received bytes content: [72, 101, 108, 108, 111]
+2025-10-07T04:54:45.193422871Z  INFO core_kit::server: 119: New stream accepted
+2025-10-07T04:54:45.193441767Z  INFO core_kit::server: 169: Received bytes length: 5
+2025-10-07T04:54:45.193453619Z  INFO core_kit::server: 174: Received bytes content: [72, 101, 108, 108, 111]
+2025-10-07T04:54:45.1934702Z  INFO core_kit::server: 119: New stream accepted
+2025-10-07T04:54:45.193486971Z  INFO core_kit::server: 169: Received bytes length: 5
+2025-10-07T04:54:45.193498864Z  INFO core_kit::server: 174: Received bytes content: [72, 101, 108, 108, 111]
+2025-10-07T04:54:45.193517078Z  INFO core_kit::server: 119: New stream accepted
+2025-10-07T04:54:45.193537426Z  INFO core_kit::server: 169: Received bytes length: 5
+2025-10-07T04:54:45.193552464Z  INFO core_kit::server: 174: Received bytes content: [72, 101, 108, 108, 111]
+2025-10-07T04:54:45.193569085Z  INFO core_kit::server: 119: New stream accepted
+2025-10-07T04:54:45.193588512Z  INFO core_kit::server: 169: Received bytes length: 5
+2025-10-07T04:54:45.193600314Z  INFO core_kit::server: 174: Received bytes content: [72, 101, 108, 108, 111]
+2025-10-07T04:55:15.221771353Z ERROR core_kit::server: 135: Connection error (maybe closed): timed out
+2025-10-07T04:55:15.221919801Z  INFO core_kit::server: 95: No active connection, waiting for one...
+2025-10-07T04:55:15.221942754Z  INFO core_kit::server: 74: Waiting for connection...
+2025-10-07T04:55:39.528824021Z  INFO test: 15: Daemon started
+2025-10-07T04:55:39.528859077Z  INFO core_kit::common: 12: Certificate key file found at "/home/fanick/work/rust/touchpad/certs/certificate.pem"
+2025-10-07T04:55:39.528872502Z  INFO core_kit::common: 17: Certificate file loaded: /home/fanick/work/rust/touchpad/certs/certificate.pem
+2025-10-07T04:55:39.528927275Z  INFO core_kit::common: 29: Private key file found at "/home/fanick/work/rust/touchpad/certs/private.key.pem"
+2025-10-07T04:55:39.529264808Z  INFO core_kit::server: 69: Server configuration created successfully
+2025-10-07T04:55:39.529521699Z  INFO core_kit::server: 51: listening on 127.0.0.1:8521
+2025-10-07T04:55:39.529662303Z  INFO core_kit::server: 91: Starting server loop iteration
+2025-10-07T04:55:39.529679125Z  INFO core_kit::server: 95: No active connection, waiting for one...
+2025-10-07T04:55:39.529691939Z  INFO core_kit::server: 74: Waiting for connection...
+2025-10-07T04:55:39.537819306Z  INFO test: 27: Daemon started
+2025-10-07T04:55:39.537851216Z  INFO core_kit::common: 12: Certificate key file found at "/home/fanick/work/rust/touchpad/certs/certificate.pem"
+2025-10-07T04:55:39.537864791Z  INFO core_kit::common: 17: Certificate file loaded: /home/fanick/work/rust/touchpad/certs/certificate.pem
+2025-10-07T04:55:39.542161307Z  INFO core_kit::server: 83: Connection established, ip: Some(127.0.0.1)
+2025-10-07T04:55:40.542490172Z  INFO test: 36: Send message
+2025-10-07T04:55:40.542588948Z  INFO test: 36: Send message
+2025-10-07T04:55:40.542607472Z  INFO test: 36: Send message
+2025-10-07T04:55:40.542641146Z  INFO test: 36: Send message
+2025-10-07T04:55:40.542656935Z  INFO test: 36: Send message
+2025-10-07T04:55:40.542673486Z  INFO test: 36: Send message
+2025-10-07T04:55:40.542694045Z  INFO test: 36: Send message
+2025-10-07T04:55:40.542716166Z  INFO test: 36: Send message
+2025-10-07T04:55:40.542743668Z  INFO test: 36: Send message
+2025-10-07T04:55:40.542776369Z  INFO test: 36: Send message
+2025-10-07T04:55:40.543568464Z  INFO core_kit::server: 119: New stream accepted
+2025-10-07T04:55:40.543665376Z  INFO core_kit::server: 169: Received bytes length: 5
+2025-10-07T04:55:40.543703437Z  INFO core_kit::server: 174: Received bytes content: Ok("Hello")
+2025-10-07T04:55:40.543802413Z  INFO core_kit::server: 119: New stream accepted
+2025-10-07T04:55:40.543891279Z  INFO core_kit::server: 169: Received bytes length: 5
+2025-10-07T04:55:40.543933969Z  INFO core_kit::server: 174: Received bytes content: Ok("Hello")
+2025-10-07T04:55:40.544008519Z  INFO core_kit::server: 119: New stream accepted
+2025-10-07T04:55:40.544069584Z  INFO core_kit::server: 169: Received bytes length: 5
+2025-10-07T04:55:40.544109909Z  INFO core_kit::server: 174: Received bytes content: Ok("Hello")
+2025-10-07T04:55:40.544176444Z  INFO core_kit::server: 119: New stream accepted
+2025-10-07T04:55:40.544237198Z  INFO core_kit::server: 169: Received bytes length: 5
+2025-10-07T04:55:40.544278455Z  INFO core_kit::server: 174: Received bytes content: Ok("Hello")
+2025-10-07T04:55:40.544343066Z  INFO core_kit::server: 119: New stream accepted
+2025-10-07T04:55:40.544765368Z  INFO core_kit::server: 169: Received bytes length: 5
+2025-10-07T04:55:40.54478789Z  INFO core_kit::server: 174: Received bytes content: Ok("Hello")
+2025-10-07T04:55:40.544836672Z  INFO core_kit::server: 119: New stream accepted
+2025-10-07T04:55:40.544863272Z  INFO core_kit::server: 169: Received bytes length: 5
+2025-10-07T04:55:40.544879642Z  INFO core_kit::server: 174: Received bytes content: Ok("Hello")
+2025-10-07T04:55:40.544911723Z  INFO core_kit::server: 119: New stream accepted
+2025-10-07T04:55:40.544939925Z  INFO core_kit::server: 169: Received bytes length: 5
+2025-10-07T04:55:40.544961185Z  INFO core_kit::server: 174: Received bytes content: Ok("Hello")
+2025-10-07T04:55:40.544987785Z  INFO core_kit::server: 119: New stream accepted
+2025-10-07T04:55:40.54501172Z  INFO core_kit::server: 169: Received bytes length: 5
+2025-10-07T04:55:40.54502785Z  INFO core_kit::server: 174: Received bytes content: Ok("Hello")
+2025-10-07T04:55:40.54505456Z  INFO core_kit::server: 119: New stream accepted
+2025-10-07T04:55:40.545080419Z  INFO core_kit::server: 169: Received bytes length: 5
+2025-10-07T04:55:40.545096118Z  INFO core_kit::server: 174: Received bytes content: Ok("Hello")
+2025-10-07T04:55:40.54512374Z  INFO core_kit::server: 119: New stream accepted
+2025-10-07T04:55:40.545148376Z  INFO core_kit::server: 169: Received bytes length: 5
+2025-10-07T04:55:40.545165839Z  INFO core_kit::server: 174: Received bytes content: Ok("Hello")
+2025-10-07T04:56:10.573000227Z ERROR core_kit::server: 135: Connection error (maybe closed): timed out
+2025-10-07T04:56:10.573154596Z  INFO core_kit::server: 95: No active connection, waiting for one...
+2025-10-07T04:56:10.573181717Z  INFO core_kit::server: 74: Waiting for connection...
+2025-10-07T04:57:57.669844437Z  INFO test: 27: Daemon started
+2025-10-07T04:57:57.669887157Z  INFO core_kit::common: 12: Certificate key file found at "/home/fanick/work/rust/touchpad/certs/certificate.pem"
+2025-10-07T04:57:57.669901574Z  INFO core_kit::common: 17: Certificate file loaded: /home/fanick/work/rust/touchpad/certs/certificate.pem
+2025-10-07T04:57:57.674131705Z  INFO core_kit::server: 83: Connection established, ip: Some(127.0.0.1)
+2025-10-07T04:57:58.674759882Z  INFO test: 36: Send message
+2025-10-07T04:57:58.674859298Z  INFO test: 36: Send message
+2025-10-07T04:57:58.674882572Z  INFO test: 36: Send message
+2025-10-07T04:57:58.674900095Z  INFO test: 36: Send message
+2025-10-07T04:57:58.674933247Z  INFO test: 36: Send message
+2025-10-07T04:57:58.674952403Z  INFO test: 36: Send message
+2025-10-07T04:57:58.674973202Z  INFO test: 36: Send message
+2025-10-07T04:57:58.674990855Z  INFO test: 36: Send message
+2025-10-07T04:57:58.675009871Z  INFO test: 36: Send message
+2025-10-07T04:57:58.675033906Z  INFO test: 36: Send message
+2025-10-07T04:57:58.675809019Z  INFO core_kit::server: 119: New stream accepted
+2025-10-07T04:57:58.675932651Z  INFO core_kit::server: 169: Received bytes length: 5
+2025-10-07T04:57:58.67597999Z  INFO core_kit::server: 174: Received bytes content: Ok("Hello")
+2025-10-07T04:57:58.676078304Z  INFO core_kit::server: 119: New stream accepted
+2025-10-07T04:57:58.67617214Z  INFO core_kit::server: 169: Received bytes length: 5
+2025-10-07T04:57:58.676221472Z  INFO core_kit::server: 174: Received bytes content: Ok("Hello")
+2025-10-07T04:57:58.676296082Z  INFO core_kit::server: 119: New stream accepted
+2025-10-07T04:57:58.676385951Z  INFO core_kit::server: 169: Received bytes length: 5
+2025-10-07T04:57:58.676416638Z  INFO core_kit::server: 174: Received bytes content: Ok("Hello")
+2025-10-07T04:57:58.676450712Z  INFO core_kit::server: 119: New stream accepted
+2025-10-07T04:57:58.676486068Z  INFO core_kit::server: 169: Received bytes length: 5
+2025-10-07T04:57:58.676505184Z  INFO core_kit::server: 174: Received bytes content: Ok("Hello")
+2025-10-07T04:57:58.676536343Z  INFO core_kit::server: 119: New stream accepted
+2025-10-07T04:57:58.676571228Z  INFO core_kit::server: 169: Received bytes length: 5
+2025-10-07T04:57:58.676590494Z  INFO core_kit::server: 174: Received bytes content: Ok("Hello")
+2025-10-07T04:57:58.676623867Z  INFO core_kit::server: 119: New stream accepted
+2025-10-07T04:57:58.676658652Z  INFO core_kit::server: 169: Received bytes length: 5
+2025-10-07T04:57:58.676677097Z  INFO core_kit::server: 174: Received bytes content: Ok("Hello")
+2025-10-07T04:57:58.676709327Z  INFO core_kit::server: 119: New stream accepted
+2025-10-07T04:57:58.676743221Z  INFO core_kit::server: 169: Received bytes length: 5
+2025-10-07T04:57:58.676761314Z  INFO core_kit::server: 174: Received bytes content: Ok("Hello")
+2025-10-07T04:57:58.67679114Z  INFO core_kit::server: 119: New stream accepted
+2025-10-07T04:57:58.676823451Z  INFO core_kit::server: 169: Received bytes length: 5
+2025-10-07T04:57:58.676843228Z  INFO core_kit::server: 174: Received bytes content: Ok("Hello")
+2025-10-07T04:57:58.676875759Z  INFO core_kit::server: 119: New stream accepted
+2025-10-07T04:57:58.676910123Z  INFO core_kit::server: 169: Received bytes length: 5
+2025-10-07T04:57:58.676931353Z  INFO core_kit::server: 174: Received bytes content: Ok("Hello")
+2025-10-07T04:57:58.676963954Z  INFO core_kit::server: 119: New stream accepted
+2025-10-07T04:57:58.676998209Z  INFO core_kit::server: 169: Received bytes length: 5
+2025-10-07T04:57:58.677019729Z  INFO core_kit::server: 174: Received bytes content: Ok("Hello")
+2025-10-07T04:57:58.777045453Z  INFO core_kit::server: 119: New stream accepted
+2025-10-07T04:57:58.777113631Z  INFO core_kit::server: 169: Received bytes length: 15
+2025-10-07T04:57:58.777144359Z  INFO core_kit::server: 171: Received stop code
+2025-10-07T04:57:58.777173563Z  INFO core_kit::server: 124: Server shutdown
+2025-10-07T04:58:16.365633357Z  INFO test: 15: Daemon started
+2025-10-07T04:58:16.365665116Z  INFO core_kit::common: 12: Certificate key file found at "/home/fanick/work/rust/touchpad/certs/certificate.pem"
+2025-10-07T04:58:16.365678932Z  INFO core_kit::common: 17: Certificate file loaded: /home/fanick/work/rust/touchpad/certs/certificate.pem
+2025-10-07T04:58:16.365730529Z  INFO core_kit::common: 29: Private key file found at "/home/fanick/work/rust/touchpad/certs/private.key.pem"
+2025-10-07T04:58:16.366044307Z  INFO core_kit::server: 69: Server configuration created successfully
+2025-10-07T04:58:16.366241828Z  INFO core_kit::server: 51: listening on 127.0.0.1:8521
+2025-10-07T04:58:16.366389705Z  INFO core_kit::server: 91: Starting server loop iteration
+2025-10-07T04:58:16.366406366Z  INFO core_kit::server: 95: No active connection, waiting for one...
+2025-10-07T04:58:16.366418298Z  INFO core_kit::server: 74: Waiting for connection...
+2025-10-07T04:58:19.200305788Z  INFO test: 27: Daemon started
+2025-10-07T04:58:19.2003387Z  INFO core_kit::common: 12: Certificate key file found at "/home/fanick/work/rust/touchpad/certs/certificate.pem"
+2025-10-07T04:58:19.20036011Z  INFO core_kit::common: 17: Certificate file loaded: /home/fanick/work/rust/touchpad/certs/certificate.pem
+2025-10-07T04:58:19.204332538Z  INFO core_kit::server: 83: Connection established, ip: Some(127.0.0.1)
+2025-10-07T04:58:20.205741999Z  INFO test: 36: Send message
+2025-10-07T04:58:20.205901879Z  INFO test: 36: Send message
+2025-10-07T04:58:20.205949929Z  INFO test: 36: Send message
+2025-10-07T04:58:20.205997879Z  INFO test: 36: Send message
+2025-10-07T04:58:20.206069814Z  INFO test: 36: Send message
+2025-10-07T04:58:20.206132171Z  INFO test: 36: Send message
+2025-10-07T04:58:20.206232369Z  INFO test: 36: Send message
+2025-10-07T04:58:20.206290538Z  INFO test: 36: Send message
+2025-10-07T04:58:20.206332066Z  INFO test: 36: Send message
+2025-10-07T04:58:20.20638798Z  INFO test: 36: Send message
+2025-10-07T04:58:20.206893759Z  INFO core_kit::server: 119: New stream accepted
+2025-10-07T04:58:20.206956727Z  INFO core_kit::server: 169: Received bytes length: 5
+2025-10-07T04:58:20.206980351Z  INFO core_kit::server: 174: Received bytes content: Ok("Hello")
+2025-10-07T04:58:20.207034052Z  INFO core_kit::server: 119: New stream accepted
+2025-10-07T04:58:20.207067294Z  INFO core_kit::server: 169: Received bytes length: 5
+2025-10-07T04:58:20.207084937Z  INFO core_kit::server: 174: Received bytes content: Ok("Hello")
+2025-10-07T04:58:20.20711836Z  INFO core_kit::server: 119: New stream accepted
+2025-10-07T04:58:20.207145841Z  INFO core_kit::server: 169: Received bytes length: 5
+2025-10-07T04:58:20.207164747Z  INFO core_kit::server: 174: Received bytes content: Ok("Hello")
+2025-10-07T04:58:20.207192048Z  INFO core_kit::server: 119: New stream accepted
+2025-10-07T04:58:20.207217816Z  INFO core_kit::server: 169: Received bytes length: 5
+2025-10-07T04:58:20.207235119Z  INFO core_kit::server: 174: Received bytes content: Ok("Hello")
+2025-10-07T04:58:20.207263652Z  INFO core_kit::server: 119: New stream accepted
+2025-10-07T04:58:20.207290252Z  INFO core_kit::server: 169: Received bytes length: 5
+2025-10-07T04:58:20.207307464Z  INFO core_kit::server: 174: Received bytes content: Ok("Hello")
+2025-10-07T04:58:20.207349633Z  INFO core_kit::server: 119: New stream accepted
+2025-10-07T04:58:20.207392714Z  INFO core_kit::server: 169: Received bytes length: 5
+2025-10-07T04:58:20.207409596Z  INFO core_kit::server: 174: Received bytes content: Ok("Hello")
+2025-10-07T04:58:20.207437428Z  INFO core_kit::server: 119: New stream accepted
+2025-10-07T04:58:20.207462705Z  INFO core_kit::server: 169: Received bytes length: 5
+2025-10-07T04:58:20.207480058Z  INFO core_kit::server: 174: Received bytes content: Ok("Hello")
+2025-10-07T04:58:20.207505526Z  INFO core_kit::server: 119: New stream accepted
+2025-10-07T04:58:20.207536414Z  INFO core_kit::server: 169: Received bytes length: 5
+2025-10-07T04:58:20.207553486Z  INFO core_kit::server: 174: Received bytes content: Ok("Hello")
+2025-10-07T04:58:20.207582149Z  INFO core_kit::server: 119: New stream accepted
+2025-10-07T04:58:20.20760929Z  INFO core_kit::server: 169: Received bytes length: 5
+2025-10-07T04:58:20.207626903Z  INFO core_kit::server: 174: Received bytes content: Ok("Hello")
+2025-10-07T04:58:20.207651079Z  INFO core_kit::server: 119: New stream accepted
+2025-10-07T04:58:20.207677568Z  INFO core_kit::server: 169: Received bytes length: 5
+2025-10-07T04:58:20.207695141Z  INFO core_kit::server: 174: Received bytes content: Ok("Hello")
+2025-10-07T04:58:20.307651345Z  INFO core_kit::server: 119: New stream accepted
+2025-10-07T04:58:20.307709514Z  INFO core_kit::server: 169: Received bytes length: 15
+2025-10-07T04:58:20.30773384Z  INFO core_kit::server: 171: Received stop code
+2025-10-07T04:58:20.307752024Z  INFO core_kit::server: 124: Server shutdown

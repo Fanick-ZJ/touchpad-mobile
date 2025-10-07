@@ -1,0 +1,5 @@
+2025-10-06T06:07:54.325080455Z  INFO test: 10: Daemon started
+2025-10-06T06:07:54.325111113Z  INFO core_kit::common: 13: Certificate key file found at "/home/fanick/work/rust/touchpad/certs/certificate.pem"
+2025-10-06T06:07:54.325124538Z  INFO core_kit::common: 18: Certificate file loaded: /home/fanick/work/rust/touchpad/certs/certificate.pem
+2025-10-06T06:07:54.325192415Z  INFO core_kit::common: 30: Private key file found at "/home/fanick/work/rust/touchpad/certs/private.key.pem"
+2025-10-06T06:07:54.325482529Z  INFO core_kit::server: 50: Server configuration created successfully

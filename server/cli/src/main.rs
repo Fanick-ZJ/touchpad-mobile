@@ -1,6 +1,6 @@
 use clap::Parser;
 use config;
-use core::{config::Config, logger::init_tracing};
+use core_kit::{config::TouchpadConfig, logger::init_tracing};
 use tracing::{error, info};
 
 #[derive(Parser, Debug)]
@@ -13,7 +13,7 @@ struct Cli {
 fn main() -> Result<(), config::ConfigError> {
     let _guard = init_tracing();
     let cli = Cli::parse();
-    let config = Config::from(&cli.config_file).map_err(|e| {
+    let config = TouchpadConfig::from(&cli.config_file).map_err(|e| {
         error!("Error: {}", e);
         e
     });

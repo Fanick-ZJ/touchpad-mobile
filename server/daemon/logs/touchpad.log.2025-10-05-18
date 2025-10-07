@@ -1,0 +1,16 @@
+2025-10-05T18:01:40.019984889Z  INFO test: 10: Daemon started
+2025-10-05T18:01:40.020017931Z  INFO core_kit::common: 13: certificate key file found at "/home/fanick/work/rust/touchpad/certs/certificate.pem"
+2025-10-05T18:01:40.020179695Z  INFO core_kit::common: 26: Certificate file loaded: /home/fanick/work/rust/touchpad/certs/certificate.pem
+2025-10-05T18:01:40.020200354Z  INFO core_kit::common: 39: Private key file found at "/home/fanick/work/rust/touchpad/certs/private.key.pem"
+2025-10-05T18:04:43.886346237Z  INFO test: 10: Daemon started
+2025-10-05T18:04:43.886388176Z  INFO core_kit::common: 13: Certificate key file found at "/home/fanick/work/rust/touchpad/certs/certificate.der"
+2025-10-05T18:04:43.886659085Z  INFO core_kit::common: 26: Certificate file loaded: /home/fanick/work/rust/touchpad/certs/certificate.der
+2025-10-05T18:04:43.886689342Z  INFO core_kit::common: 39: Private key file found at "/home/fanick/work/rust/touchpad/certs/private.key.pem"
+2025-10-05T18:04:43.887077062Z  INFO core_kit::server: 50: Server configuration created successfully
+2025-10-05T18:04:43.887340547Z  INFO test: 14: Server start
+2025-10-05T18:05:52.900223059Z  INFO test: 10: Daemon started
+2025-10-05T18:05:52.900265909Z  INFO core_kit::common: 13: Certificate key file found at "/home/fanick/work/rust/touchpad/certs/certificate.pem"
+2025-10-05T18:05:52.900323247Z  INFO core_kit::common: 18: Certificate file loaded: /home/fanick/work/rust/touchpad/certs/certificate.pem
+2025-10-05T18:05:52.900389281Z  INFO core_kit::common: 30: Private key file found at "/home/fanick/work/rust/touchpad/certs/private.key.pem"
+2025-10-05T18:05:52.900779545Z  INFO core_kit::server: 50: Server configuration created successfully
+2025-10-05T18:05:52.901043121Z  INFO test: 14: Server start

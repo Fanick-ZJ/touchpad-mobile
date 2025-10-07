@@ -5,9 +5,13 @@ edition.workspace = true
 
 [dependencies]
 prost = { workspace = true }
+prost-types = { workspace = true }
+prost-reflect = { workspace = true, features = ["derive"] }
+once_cell = { workspace = true }
 
 [build-dependencies]
 cargo_metadata = { workspace = true }
+prost-reflect-build = { workspace = true }
 prost-build = { workspace = true }
 
 [package.metadata.touchpad-proto]

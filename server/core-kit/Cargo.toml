@@ -1,5 +1,5 @@
 [package]
-name = "core"
+name = "core-kit"
 version.workspace = true
 edition.workspace = true
 
@@ -9,8 +9,13 @@ config = { workspace = true }
 prost = { workspace = true }
 quinn = { workspace = true }
 serde = { workspace = true, features = ["derive"] }
-tokio = { workspace = true }
+tokio = { workspace = true , features=["fs"]}
 tracing = { workspace = true }
 tracing-subscriber = { workspace = true, features = ["env-filter", "local-time"] }
 tracing-appender = { workspace = true }
 chrono = { workspace = true }
+anyhow = { workspace = true }
+prost-types = { workspace = true }
+prost-reflect = { workspace = true }
+touchpad-proto = { workspace = true }
+rcgen = { workspace = true }
