@@ -65,6 +65,10 @@ protobuf {
         id("kotlin") {
             artifact = "com.google.protobuf:protoc-gen-kotlin:${libs.versions.googleProtoBuf.get()}"
         }
+        // 没有这个生成不了java文件
+        id("javalite") {
+            artifact = "com.google.protobuf:protoc-gen-javalite:3.0.0"
+        }
     }
     generateProtoTasks {
         all().forEach { task ->
