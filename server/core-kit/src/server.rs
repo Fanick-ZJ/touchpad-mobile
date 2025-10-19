@@ -1,13 +1,10 @@
 use std::{net::SocketAddr, path::Path, sync::Arc};
 
-use anyhow::{Result, anyhow, bail};
+use anyhow::{Result, anyhow};
 
 use quinn::{
     Connection, Endpoint, ServerConfig, VarInt,
-    rustls::{
-        lock::Mutex,
-        pki_types::{CertificateDer, PrivatePkcs8KeyDer},
-    },
+    rustls::pki_types::{CertificateDer, PrivatePkcs8KeyDer},
 };
 use tokio::sync::{Notify, RwLock};
 use tracing::{error, info};
@@ -25,6 +22,7 @@ pub fn configure_server(
 ) -> Result<ServerConfig> {
     let mut server_config = ServerConfig::with_single_cert(vec![cert_der], key_der.into())?;
     let transport_config = Arc::get_mut(&mut server_config.transport).unwrap();
+    // 最大双工通讯连接数量
     transport_config.max_concurrent_bidi_streams(100_u8.into());
 
     Ok(server_config)

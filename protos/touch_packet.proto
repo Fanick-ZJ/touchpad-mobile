@@ -1,5 +1,4 @@
 syntax = "proto3";
-
 package touchpad.v1;
 
 // 主消息：一条网络包只含一个 TouchPacket
