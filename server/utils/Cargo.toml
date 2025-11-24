@@ -1,0 +1,9 @@
+[package]
+name = "utils"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+rand = { workspace = true }
+anyhow = { workspace = true }
+xxhash-rust = { workspace = true }

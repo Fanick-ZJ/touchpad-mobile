@@ -16,7 +16,7 @@ async fn server() -> Result<()> {
 
     let server = Arc::new(Server::new(&config).await?);
     // 在后台启动服务器
-    tokio::join!(async { server.run_work().await });
+    let _ = tokio::join!(async { server.run_work().await });
     Ok(())
 }
 
@@ -26,7 +26,7 @@ async fn client() -> Result<()> {
     let config = TouchpadConfig::from(&"tests/config.yml").unwrap();
     info!("Daemon started");
 
-    let server_addr = SocketAddr::new(LOCALHOST_V4, config.port);
+    let server_addr = SocketAddr::new(LOCALHOST_V4, config.backend_port);
     let cert = read_cert(Path::new(&config.cert_pem)).await?;
     let local_addr = SocketAddr::new(LOCALHOST_V4, 0);
     let mut client = Client::new(local_addr, server_addr, &[&cert], "localhost".into())?;

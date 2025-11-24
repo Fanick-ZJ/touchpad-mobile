@@ -1,15 +1,17 @@
 syntax = "proto3";
 package touchpad.v1;
 
-import "google/protobuf/any.proto";
-
-enum ProtoId {
-    HAND_SHAKE = 0;
-    TOUCH_PACKET = 1;
-    HEART_BEAT = 2;
-}
+import "discover_validation.proto";
+import "touch_packet.proto";
+import "handshake.proto";
+import "heartbeat.proto";
 
 message Wrapper {
-    ProtoId proto_id = 1;
-    google.protobuf.Any payload = 2;
+  oneof payload {
+    Welcome     welcome           = 1;
+    TouchPacket touch_packet      = 2;
+    HeartBeat   heart_beat        = 3;
+    DiscoverValidation discover_validation = 4;
+    Reject reject = 5;
+  }
 }

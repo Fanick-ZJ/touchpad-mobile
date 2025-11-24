@@ -40,7 +40,7 @@ pub struct Server {
 impl Server {
     pub async fn new(config: &TouchpadConfig) -> Result<Self> {
         let server_config = Self::server_config(config).await?;
-        let ip_addr = SocketAddr::new(LOCALHOST_V4, config.port);
+        let ip_addr = SocketAddr::new(LOCALHOST_V4, config.backend_port);
         let endpoint = Endpoint::server(server_config, ip_addr)?;
         let shutdown = Arc::new(Notify::new());
         info!("listening on {}", endpoint.local_addr()?);

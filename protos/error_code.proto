@@ -1,0 +1,7 @@
+syntax = "proto3";
+package touchpad.v1;
+
+enum ErrorCode {
+    HELLO_CHECK_SUM_MISMATCH = 0;
+    REPEATEDLY_ADDING_DEVICES = 1;
+}

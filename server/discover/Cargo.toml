@@ -1,0 +1,21 @@
+[package]
+name = "discover"
+version.workspace = true
+edition.workspace = true
+
+[build-dependencies]
+anyhow = { workspace = true }
+dotenvy = { workspace = true }
+
+[dependencies]
+libmdns = { workspace = true }
+tokio = { workspace = true, features = ["full"] }
+local-ip-address = { workspace = true }
+anyhow = { workspace = true }
+tracing = { workspace = true }
+xxhash-rust = { workspace = true, features = ["xxh3"] }
+# workspace crate
+utils = { workspace = true }
+core-kit = { workspace = true }
+touchpad-proto = { workspace = true }
+chrono = { workspace = true }

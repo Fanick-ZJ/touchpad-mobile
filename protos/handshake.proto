@@ -1,17 +1,18 @@
 syntax = "proto3";
 package touchpad.v1;
 
-// 手机端发出握手请求
-message Hello {
-    string os = 1;
-    uint32 version = 2;
-    string name = 3;
-    string token = 4;
-}
+import "error_code.proto";
+
+// 握手设计规则
+// 第一回token的规则为DiscoverValidation中的random_key + 移动端ip + DeviceName + env中的seed 做xxhash_64
+// 后续的token走在上一次的token上做xxhash_64
 
 // 服务器端响应握手请求
 message Welcome {
-    uint32 screen_w = 1;
-    uint32 screen_h = 2;
-    string token = 3;
+    string token = 1;
+    uint64 ts_ms = 2;
+}
+
+message Reject {
+    ErrorCode reason = 1;
 }

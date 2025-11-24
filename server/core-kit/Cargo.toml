@@ -9,7 +9,7 @@ config = { workspace = true }
 prost = { workspace = true }
 quinn = { workspace = true }
 serde = { workspace = true, features = ["derive"] }
-tokio = { workspace = true , features=["fs"]}
+tokio = { workspace = true , features=["fs", "macros"]}
 tracing = { workspace = true }
 tracing-subscriber = { workspace = true, features = ["env-filter", "local-time"] }
 tracing-appender = { workspace = true }

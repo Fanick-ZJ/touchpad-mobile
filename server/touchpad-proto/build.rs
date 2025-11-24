@@ -66,6 +66,7 @@ fn main() -> Result<()> {
         // 存放 protoc 生成的 FileDescriptorSet 二进制
         .descriptor_pool("crate::DESCRIPTOR_POOL")
         .file_descriptor_set_path(out_dir.join("touchpad.v1.bin"))
-        .compile_protos(&protos_list, &[protos_dir]);
+        .compile_protos(&protos_list, &[protos_dir])
+        .expect("protoc failed");
     Ok(())
 }

@@ -17,8 +17,14 @@ pub enum LogLevel {
 
 #[derive(Debug, Deserialize)]
 pub struct TouchpadConfig {
+    // 发现服务的端口
     #[serde(default = "default_port")]
-    pub port: u16,
+    pub discover_port: u16,
+    // 后端服务的端口
+    #[serde(default = "default_backend_port")]
+    pub backend_port: u16,
+    // 将发现服务绑定到制定的地址，如果为None,则为自动，可能会被绑定到ipv6的地址中
+    pub discover_address: Option<String>,
     #[serde(default = "default_log_level")]
     pub log_level: LogLevel,
     pub cert_pem: String,
@@ -27,6 +33,10 @@ pub struct TouchpadConfig {
 
 fn default_port() -> u16 {
     8521
+}
+
+fn default_backend_port() -> u16 {
+    8522
 }
 
 fn default_log_level() -> LogLevel {

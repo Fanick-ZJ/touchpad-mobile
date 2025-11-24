@@ -2,15 +2,15 @@ syntax = "proto3";
 package touchpad.v1;
 
 // 心跳方向：Client→Server 也可 Server→Client
-enum HeartbeatDir {
+enum HeartBeatDir {
   DIR_UNSPECIFIED = 0;
   DIR_PING = 1;      // 发起方
   DIR_PONG = 2;      // 应答方
 }
 
-message Heartbeat {
-  HeartbeatDir dir  = 1;
-  fixed32 send_ts   = 2;   // 发送方本地毫秒时间戳（用于 RTT 计算）
+message HeartBeat {
+  HeartBeatDir dir  = 1;
+  fixed64 send_ts   = 2;   // 发送方本地毫秒时间戳（用于 RTT 计算）
   uint32  seq       = 3;   // 自增序列号，丢包/乱序统计
   bytes   cookie    = 4;   // 可选 0-8 byte，透传（如客户端 ID 前缀）
 }
