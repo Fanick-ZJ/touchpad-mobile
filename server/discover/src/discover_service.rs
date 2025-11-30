@@ -1,6 +1,6 @@
 use crate::device::Device;
 use anyhow::{Result, anyhow};
-use core_kit::codec::{dewrap, wrap};
+use core_kit::codec::{dewrap, varint, wrap};
 use libmdns::{Responder, Service};
 use std::{
     collections::HashMap,
@@ -16,7 +16,7 @@ use tokio::{
     },
 };
 use touchpad_proto::proto::v1::{DiscoverValidation, ErrorCode, Reject, Welcome, wrapper::Payload};
-use tracing::{error, info};
+use tracing::{debug, error, info, warn};
 use utils::{sys::get_comptuer_name, token};
 use xxhash_rust::xxh3::xxh3_64;
 
@@ -68,20 +68,26 @@ impl<'d> DiscoverService {
         dv: DiscoverValidation,
         socket: &mut TcpStream,
     ) -> Result<Device> {
+        info!("服务端使用SEED: '{}'", self.checksum_seed);
         let seed_checksum = xxh3_64(self.checksum_seed.as_bytes());
-        // 校验核通过
+
+        info!("服务端计算的校验核: {}", seed_checksum);
+        info!(
+            "接受到的校验核: {}, 目标校验核:{}",
+            dv.checksum, seed_checksum
+        );
         if dv.checksum == seed_checksum {
             let listening_device = self.listening_device.lock().await;
             if let Ok(peer_addr) = socket.peer_addr() {
-                // 重复添加设备拒绝
                 if listening_device.contains_key(&peer_addr.ip()) {
                     let reject = Reject {
                         reason: ErrorCode::RepeatedlyAddingDevices as i32,
                     };
                     let _ = socket.write(&wrap(&reject)?);
+                    warn!("重复添加设备被拒绝: {}", peer_addr.ip());
                     return Err(anyhow!("Repeatedly adding devices"));
                 }
-                // 计算初始token
+
                 let token =
                     token::get_first_token(&peer_addr.ip(), &dv.random_key, &dv.device_name)?;
                 let device = Device {
@@ -90,14 +96,15 @@ impl<'d> DiscoverService {
                     width: dv.width,
                     height: dv.height,
                 };
-                // 添加ip对应的设备
+
                 let now = chrono::Utc::now().timestamp();
                 let welcome = Welcome {
                     token,
                     ts_ms: now as u64,
                 };
-                // 发送welcome
-                let _ = socket.write(&wrap(&welcome)?);
+
+                let response_with_prefix = varint::encode_with_length_prefix(&wrap(&welcome)?);
+                let _ = socket.write(&response_with_prefix).await;
                 Ok(device)
             } else {
                 return Err(anyhow!("Failed to get peer address"));
@@ -107,7 +114,12 @@ impl<'d> DiscoverService {
             let reject = Reject {
                 reason: ErrorCode::HelloCheckSumMismatch as i32,
             };
-            let _ = socket.write(&wrap(&reject)?);
+            let response_with_prefix = varint::encode_with_length_prefix(&wrap(&reject)?);
+            let _ = socket.write(&response_with_prefix).await;
+            info!(
+                "🚫 已向客户端发送拒绝消息，长度: {} 字节",
+                response_with_prefix.len()
+            );
             return Err(anyhow!("Failed to handle client connection"));
         }
     }
@@ -117,30 +129,30 @@ impl<'d> DiscoverService {
         mut socket: TcpStream,
         addr: SocketAddr,
     ) -> Result<Device> {
-        let mut buf = vec![0; 1024];
-        let mut bytes = vec![0; 1024];
-        loop {
-            let n = socket.read(&mut buf).await?;
-            if n == 0 {
-                break;
+        let message_bytes = match varint::read_message_with_length_prefix(&mut socket).await {
+            Ok(bytes) => bytes,
+            Err(e) => {
+                error!("读取消息失败 {}: {}", addr, e);
+                return Err(e);
             }
-            bytes.extend_from_slice(&buf[..n]);
-        }
-        if let Ok(payload) = dewrap(&bytes) {
+        };
+
+        if let Ok(payload) = dewrap(&message_bytes) {
             // TODO: 解析校验码并返回设备信息
             match payload {
                 Payload::DiscoverValidation(dv) => {
                     // 校验验证核
                     let device = self.discover_validation_handler(dv, &mut socket).await?;
+                    info!("验证设备成功: {}", device.name);
                     return Ok(device);
                 }
                 _ => {
-                    info!("Received unknown payload");
+                    warn!("收到未知消息类型");
                     return Err(anyhow!("Received unknown payload"));
                 }
             }
         } else {
-            error!("Failed to dewrapper data: {:?}", &bytes);
+            error!("解析消息数据失败");
             return Err(anyhow!("Failed to handle client connection"));
         }
     }
@@ -151,7 +163,7 @@ impl<'d> DiscoverService {
         let (tx, mut rx) = oneshot::channel::<()>();
         let listener = TcpListener::bind(format!("0.0.0.0:{}", self.discover_port)).await?;
         self.stop_signal.lock().await.replace(tx);
-        info!("Discover service started on port {}", self.discover_port);
+        info!("发现服务启动，端口: {}", self.discover_port);
         loop {
             tokio::select! {
                 res = listener.accept() => {
@@ -159,6 +171,7 @@ impl<'d> DiscoverService {
                     let service = self.clone();
                     tokio::spawn(async move {
                         if let  Ok(dev) = service.handle_client_connection(socket, addr).await {
+                            debug!("接受连接: {}", addr);
                             let mut devices = service.listening_device.lock().await;
                             devices.insert(addr.ip(), dev);
                             if let Some(callback) = &service.discover_callback {
@@ -174,7 +187,7 @@ impl<'d> DiscoverService {
                 },
                 _ = &mut rx => {
                     self.stop_signal.lock().await.take();
-                    info!("Discover service stopped");
+                    info!("发现服务停止");
                     break;
                 }
             }
@@ -184,14 +197,10 @@ impl<'d> DiscoverService {
 
     pub async fn stop(&self) -> Result<()> {
         if let Some(stop_signal) = self.stop_signal.lock().await.take() {
-            if let Err(e) = stop_signal.send(()) {
-                error!("Failed to send stop signal: {:?}", e);
-            }
+            let _ = stop_signal.send(());
         }
-        if let None = self.mdns_service.lock().await.take() {
-            error!("Failed to stop mDNS service, the service is None");
-        }
-        info!("Discover service stopped");
+        let _ = self.mdns_service.lock().await.take();
+        info!("发现服务已停止");
         Ok(())
     }
 
@@ -200,10 +209,9 @@ impl<'d> DiscoverService {
             return Err(anyhow!("The discover service is started!"));
         }
         let responder = if let Some(ip_list) = &self.ip_list {
-            info!("brocast ip list: {:?}", ip_list);
+            debug!("广播IP列表: {:?}", ip_list);
             Responder::new_with_ip_list(ip_list.clone())?
         } else {
-            info!("brocast in auto mode");
             Responder::new()
         };
         let server = responder.register_with_ttl(
@@ -214,10 +222,10 @@ impl<'d> DiscoverService {
             self.ttl,
         );
         self.mdns_service.lock().await.replace(server);
-        // 启动后台进程
+        let service_clone = self.clone();
         tokio::spawn(async move {
-            if let Err(e) = self.start_confirm_server().await {
-                error!("Failed to start confirm server: {:?}", e);
+            if let Err(e) = service_clone.start_confirm_server().await {
+                error!("启动确认服务器失败: {:?}", e);
             }
         });
         Ok(())
