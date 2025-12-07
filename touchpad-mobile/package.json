@@ -1,0 +1,9 @@
+{
+	"devDependencies": {
+		"@tailwindcss/postcss": "^4.1.17",
+		"tailwindcss": "^4.1.17"
+	},
+	"dependencies": {
+		"@tauri-apps/plugin-log": "~2.7.1"
+	}
+}

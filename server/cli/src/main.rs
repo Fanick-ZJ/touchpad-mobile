@@ -1,6 +1,5 @@
 use std::{
     net::{IpAddr, Ipv4Addr, Ipv6Addr},
-    str::FromStr,
     sync::Arc,
     vec,
 };

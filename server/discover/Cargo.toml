@@ -3,10 +3,6 @@ name = "discover"
 version.workspace = true
 edition.workspace = true
 
-[build-dependencies]
-anyhow = { workspace = true }
-dotenvy = { workspace = true }
-
 [dependencies]
 libmdns = { workspace = true }
 tokio = { workspace = true, features = ["full"] }

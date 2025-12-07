@@ -8,7 +8,7 @@ use std::{
     sync::Arc,
 };
 use tokio::{
-    io::{AsyncReadExt, AsyncWriteExt},
+    io::AsyncWriteExt,
     net::{TcpListener, TcpStream},
     sync::{
         Mutex,
@@ -17,7 +17,7 @@ use tokio::{
 };
 use touchpad_proto::proto::v1::{DiscoverValidation, ErrorCode, Reject, Welcome, wrapper::Payload};
 use tracing::{debug, error, info, warn};
-use utils::{sys::get_comptuer_name, token};
+use utils::{env, sys::get_comptuer_name, token};
 use xxhash_rust::xxh3::xxh3_64;
 
 pub struct DiscoverService {
@@ -214,8 +214,11 @@ impl<'d> DiscoverService {
         } else {
             Responder::new()
         };
+        let svc_type = env::get_env("MDNS_SD_META_SERVICE")
+            .ok_or_else(|| anyhow!("获取服务名称环境变量失败"))?;
+        info!("MDNS服务名称：{svc_type:?}");
         let server = responder.register_with_ttl(
-            "_touchpad._tcp".into(),
+            svc_type.into(),
             &get_comptuer_name(),
             self.discover_port,
             &[&format!("discover_port={}", self.discover_port)],

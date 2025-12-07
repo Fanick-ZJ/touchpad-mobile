@@ -31,7 +31,7 @@ async fn client() -> Result<()> {
     let local_addr = SocketAddr::new(LOCALHOST_V4, 0);
     let mut client = Client::new(local_addr, server_addr, &[&cert], "localhost".into())?;
     client.connect().await?;
-    for i in 0..1000 {
+    for _ in 0..1000 {
         info!("Send message");
         tokio::join!(async {
             if let Err(e) = client.send("Hello".as_bytes()).await {
