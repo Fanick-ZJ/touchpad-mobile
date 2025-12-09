@@ -12,10 +12,11 @@ quinn = { workspace = true }
 serde = { workspace = true, features = ["derive"] }
 tokio = { workspace = true }
 tracing = { workspace = true }
-core-kit = { workspace = true }
 tracing-subscriber = { workspace = true, features = ["env-filter"]}
 tracing-appender = { workspace = true }
 chrono = { workspace = true }
 
-discover = { workspace = true }
-utils = { workspace = true }
+server-core-kit = { workspace = true }
+server-discover = { workspace = true }
+server-utils = { workspace = true }
+shared-utils = { workspace = true }

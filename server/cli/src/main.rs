@@ -4,12 +4,12 @@ use std::{
     vec,
 };
 
-use anyhow::{Result, anyhow};
+use anyhow::Result;
 use clap::Parser;
-use core_kit::{config::TouchpadConfig, logger::init_tracing};
-use discover::{device::Device, discover_service::DiscoverService};
+use server_core_kit::{config::TouchpadConfig, logger::init_tracing};
+use server_discover::{device::Device, discover_service::DiscoverService};
+use shared_utils::execute_params;
 use tracing::{error, info};
-use utils::env::get_env;
 
 #[derive(Parser, Debug)]
 #[command(name = "touchpad", version = "0.1.0", about = "A simple touchpad utility", long_about = None)]
@@ -27,9 +27,7 @@ async fn main() -> Result<()> {
         e
     })?;
     info!("success to load config");
-    let check_seed = get_env("SEED").ok_or(anyhow!(
-        "The .env file is missing or the SEED environment variable is not set."
-    ))?;
+    let check_seed = execute_params::hash_seed();
 
     // 获取指定的ip地址
     let discover_service_ip = if config.discover_address.is_some() {

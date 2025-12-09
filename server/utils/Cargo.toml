@@ -1,5 +1,5 @@
 [package]
-name = "utils"
+name = "server-utils"
 version.workspace = true
 edition.workspace = true
 
@@ -7,3 +7,4 @@ edition.workspace = true
 rand = { workspace = true }
 anyhow = { workspace = true }
 xxhash-rust = { workspace = true }
+shared-utils = { workspace = true }

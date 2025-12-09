@@ -1,7 +1,10 @@
 use crate::device::Device;
 use anyhow::{Result, anyhow};
-use core_kit::codec::{dewrap, varint, wrap};
 use libmdns::{Responder, Service};
+use server_core_kit::codec::{dewrap, varint, wrap};
+use server_utils::sys::get_computer_name;
+use server_utils::token;
+use shared_utils::execute_params;
 use std::{
     collections::HashMap,
     net::{IpAddr, SocketAddr},
@@ -17,7 +20,7 @@ use tokio::{
 };
 use touchpad_proto::proto::v1::{DiscoverValidation, ErrorCode, Reject, Welcome, wrapper::Payload};
 use tracing::{debug, error, info, warn};
-use utils::{env, sys::get_comptuer_name, token};
+
 use xxhash_rust::xxh3::xxh3_64;
 
 pub struct DiscoverService {
@@ -214,12 +217,11 @@ impl<'d> DiscoverService {
         } else {
             Responder::new()
         };
-        let svc_type = env::get_env("MDNS_SD_META_SERVICE")
-            .ok_or_else(|| anyhow!("获取服务名称环境变量失败"))?;
+        let svc_type = execute_params::mdns_server_type();
         info!("MDNS服务名称：{svc_type:?}");
         let server = responder.register_with_ttl(
             svc_type.into(),
-            &get_comptuer_name(),
+            &get_computer_name(),
             self.discover_port,
             &[&format!("discover_port={}", self.discover_port)],
             self.ttl,

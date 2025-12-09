@@ -1,0 +1,3 @@
+[shared-config]
+seed = "0x1234567890ABCDEF"
+mdns-server-type = "_touchpad._tcp."

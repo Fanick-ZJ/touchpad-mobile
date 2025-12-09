@@ -1,5 +1,5 @@
 [package]
-name = "core-kit"
+name = "server-core-kit"
 version.workspace = true
 edition.workspace = true
 

@@ -5,9 +5,8 @@ use std::{
     sync::{LazyLock, RwLock},
 };
 
+use shared_utils::execute_params::hash_seed;
 use xxhash_rust::xxh3::xxh3_64;
-
-use crate::env;
 
 static PREV_TOKENS: LazyLock<RwLock<HashMap<IpAddr, String>>> = LazyLock::new(|| {
     let tokens = RwLock::new(HashMap::new());
@@ -26,7 +25,7 @@ pub fn get_first_token(ip: &IpAddr, random_key: &str, device_name: &str) -> Resu
             ip.to_string()
         )));
     }
-    let seed = env::hash_seed().expect("Failed to get .env field:hash seed");
+    let seed = hash_seed();
     let token =
         xxh3_64(&format!("{}{}{}{}", random_key, ip.to_string(), device_name, seed).into_bytes())
             .to_string();
@@ -35,7 +34,7 @@ pub fn get_first_token(ip: &IpAddr, random_key: &str, device_name: &str) -> Resu
 }
 
 pub fn gen_token(ip: &IpAddr) -> String {
-    let seed = env::hash_seed().expect("Failed to get .env field:hash seed");
+    let seed = hash_seed();
     let prev_tokens = PREV_TOKENS.read().unwrap();
     let prev_token = if let Some(token) = prev_tokens.get(&ip) {
         token
@@ -54,7 +53,7 @@ pub fn set_token(ip: IpAddr) {
 }
 
 pub fn token_valid(ip: &IpAddr, token: String) -> bool {
-    let seed = env::hash_seed().expect("Failed to get .env field:hash seed");
+    let seed = hash_seed();
     let prev_tokens = PREV_TOKENS.read().unwrap();
     let prev_token = if let Some(token) = prev_tokens.get(&ip) {
         token

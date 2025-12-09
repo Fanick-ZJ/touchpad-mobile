@@ -1,4 +1,4 @@
-use core_kit::config::{LogLevel, TouchpadConfig};
+use server_core_kit::config::{LogLevel, TouchpadConfig};
 
 #[test]
 fn config_parse() {

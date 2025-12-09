@@ -38,19 +38,3 @@ async fn mdns_test() -> Result<(), Box<dyn std::error::Error>> {
     tokio::signal::ctrl_c().await?;
     Ok(())
 }
-
-#[cfg(test)]
-mod tests {
-
-    use utils::env;
-
-    #[test]
-    fn test_seed_constant() {
-        if let Some(seed) = env::get_env("XXH_SEED") {
-            println!("{seed}");
-            assert_eq!(seed, "0x1234567890ABCDEF");
-        } else {
-            assert!(false, "Can't read root .env file")
-        }
-    }
-}

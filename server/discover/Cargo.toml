@@ -1,5 +1,5 @@
 [package]
-name = "discover"
+name = "server-discover"
 version.workspace = true
 edition.workspace = true
 
@@ -10,8 +10,9 @@ local-ip-address = { workspace = true }
 anyhow = { workspace = true }
 tracing = { workspace = true }
 xxhash-rust = { workspace = true, features = ["xxh3"] }
-# workspace crate
-utils = { workspace = true }
-core-kit = { workspace = true }
-touchpad-proto = { workspace = true }
 chrono = { workspace = true }
+# workspace crate
+server-utils = { workspace = true }
+server-core-kit = { workspace = true }
+shared-utils = { workspace = true }
+touchpad-proto = { workspace = true }

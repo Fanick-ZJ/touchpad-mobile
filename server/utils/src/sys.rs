@@ -1,5 +1,5 @@
 use std::env;
-pub fn get_comptuer_name() -> String {
+pub fn get_computer_name() -> String {
     // Windwos中
     #[cfg(target_os = "windows")]
     {

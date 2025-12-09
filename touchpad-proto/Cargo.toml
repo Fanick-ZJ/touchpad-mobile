@@ -15,4 +15,4 @@ prost-reflect-build = { workspace = true }
 prost-build = { workspace = true }
 
 [package.metadata.touchpad-proto]
-protos_dir = "../../protos"
+protos_dir = "../protos"

@@ -1,0 +1,9 @@
+[package]
+name = "shared-utils"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+toml = { workspace = true }
+anyhow = { workspace = true }
+serde = { workspace = true, features = ["derive"]}

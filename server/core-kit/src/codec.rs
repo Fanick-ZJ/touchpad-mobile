@@ -2,7 +2,7 @@ use anyhow::{Result, anyhow};
 use prost::Message;
 use std::any::Any;
 use std::io::Read;
-use tokio::io::{AsyncRead, AsyncReadExt};
+use tokio::io::AsyncRead;
 use touchpad_proto::proto::{self, v1::wrapper::Payload};
 use tracing::{debug, error};
 
@@ -44,6 +44,8 @@ pub fn dewrap(buf: &[u8]) -> Result<Payload> {
 }
 
 pub mod varint {
+    use tokio::io::AsyncReadExt;
+
     use super::*;
 
     pub fn encode_with_length_prefix(data: &[u8]) -> Vec<u8> {
