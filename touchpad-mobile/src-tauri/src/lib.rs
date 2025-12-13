@@ -3,9 +3,9 @@ use std::{
     sync::{Arc, Mutex},
 };
 
-use mdns_sd::ServiceDaemon;
+use mdns_sd::{IfKind, ServiceDaemon};
+use shared_utils::execute_params;
 use tauri::State;
-mod utils;
 
 struct DiscoverDevice {
     name: String,
@@ -31,7 +31,11 @@ impl ManagedState {
 
 fn initialize_shared_daemon() -> SharedServiceDaemon {
     let daemon = ServiceDaemon::new().expect("Failed to create daemon");
-    if let Err(err) = daemon.disable_interface(utils::enumerate_mdns_incapable_interfaces()) {
+    let interface = shared_utils::interface::enumerate_mdns_incapable_interfaces()
+        .iter()
+        .map(|inter_name| IfKind::from(inter_name))
+        .collect::<Vec<IfKind>>();
+    if let Err(err) = daemon.disable_interface(interface) {
         log::warn!("Failed to disable interface: {err:?}, continuing anyway");
     }
     Arc::new(Mutex::new(daemon))
@@ -43,7 +47,37 @@ fn start_discover_service(state: State<ManagedState>) -> Result<(), String> {
         .daemon
         .lock()
         .map_err(|e| format!("Failed to lock daemon: {e:?}"))?;
-    // daemon.stop_browse(ty_domain)
+
+    // 先停止服务
+    daemon
+        .stop_browse(execute_params::mdns_server_type())
+        .map_err(|e| format!("Failed to stop discover_service"))?;
+    let daemon = daemon.clone();
+    tauri::async_runtime::spawn(async move {
+        let receiver = match daemon.browse(execute_params::mdns_server_type()) {
+            Ok(receiver) => receiver,
+            Err(e) => {
+                log::error!("Failed to browse for service types: {e:?}");
+                return;
+            }
+        };
+        while let Ok(event) = receiver.recv_async().await {
+            match event {
+                mdns_sd::ServiceEvent::SearchStarted(service_type) => {
+                    log::info!("start mdns discover service: {service_type}")
+                }
+                mdns_sd::ServiceEvent::ServiceFound(service_type, full_name) => {
+                    log::info!("found service: {full_name}")
+                }
+                mdns_sd::ServiceEvent::ServiceResolved(resolved_service) => {
+                    log::info!("service resolved: {:?}", resolved_service)
+                }
+                mdns_sd::ServiceEvent::ServiceRemoved(_, _) => todo!(),
+                mdns_sd::ServiceEvent::SearchStopped(_) => todo!(),
+                _ => todo!(),
+            }
+        }
+    });
     Ok(())
 }
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -53,6 +87,7 @@ pub fn run() {
 
     let log_targets = vec![
         Target::new(TargetKind::Stdout),
+        Target::new(TargetKind::LogDir { file_name: None }),
         Target::new(TargetKind::Webview),
     ];
     let colors = fern::colors::ColoredLevelConfig::default();
@@ -76,7 +111,7 @@ pub fn run() {
         )
         .plugin(tauri_plugin_opener::init())
         .manage(ManagedState::new())
-        .invoke_handler(tauri::generate_handler![])
+        .invoke_handler(tauri::generate_handler![start_discover_service])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }

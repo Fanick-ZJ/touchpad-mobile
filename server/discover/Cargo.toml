@@ -16,3 +16,4 @@ server-utils = { workspace = true }
 server-core-kit = { workspace = true }
 shared-utils = { workspace = true }
 touchpad-proto = { workspace = true }
+mdns-sd = { workspace = true }

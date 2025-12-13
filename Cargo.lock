@@ -5520,6 +5520,7 @@ dependencies = [
  "chrono",
  "libmdns",
  "local-ip-address",
+ "mdns-sd",
  "server-core-kit",
  "server-utils",
  "shared-utils",
@@ -5686,6 +5687,8 @@ name = "shared-utils"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "mdns-sd",
+ "pnet",
  "serde",
  "toml 0.9.8",
 ]
@@ -6740,9 +6743,9 @@ dependencies = [
  "ipconfig",
  "log",
  "mdns-sd",
- "pnet",
  "serde",
  "serde_json",
+ "shared-utils",
  "tauri",
  "tauri-build",
  "tauri-plugin-log",
@@ -6758,6 +6761,7 @@ dependencies = [
  "js-sys",
  "leptos 0.7.8",
  "leptos_meta",
+ "log",
  "serde",
  "serde-wasm-bindgen",
  "thaw",

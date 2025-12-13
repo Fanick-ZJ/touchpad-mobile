@@ -7,3 +7,5 @@ edition.workspace = true
 toml = { workspace = true }
 anyhow = { workspace = true }
 serde = { workspace = true, features = ["derive"]}
+mdns-sd = { workspace = true }
+pnet = { workspace = true }

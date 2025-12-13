@@ -1,6 +1,7 @@
 use crate::device::Device;
 use anyhow::{Result, anyhow};
-use libmdns::{Responder, Service};
+use libmdns::Responder;
+use mdns_sd::{ServiceDaemon, ServiceInfo};
 use server_core_kit::codec::{dewrap, varint, wrap};
 use server_utils::sys::get_computer_name;
 use server_utils::token;
@@ -9,6 +10,7 @@ use std::{
     collections::HashMap,
     net::{IpAddr, SocketAddr},
     sync::Arc,
+    time::Duration,
 };
 use tokio::{
     io::AsyncWriteExt,
@@ -24,17 +26,18 @@ use tracing::{debug, error, info, warn};
 use xxhash_rust::xxh3::xxh3_64;
 
 pub struct DiscoverService {
-    ttl: u32,
-    // mdns服务的端口
+    // 发现服务验证登录的端口
+    login_port: u16,
+    // 发现服务的端口
     discover_port: u16,
-    // 用于启动mdns服务的IP列表
-    ip_list: Option<Vec<IpAddr>>,
+    // 用于启动mdns服务的IP
+    ip: IpAddr,
     // 校验使用的字段
     checksum_seed: String,
     // 准备接受连接的设备
     listening_device: Arc<Mutex<HashMap<IpAddr, Device>>>,
     stop_signal: Arc<Mutex<Option<oneshot::Sender<()>>>>,
-    mdns_service: Arc<Mutex<Option<Service>>>,
+    mdns_daemon: Arc<Mutex<Option<ServiceDaemon>>>,
     discover_callback: Option<Box<dyn Fn(&Device, Vec<&Device>) + Send + Sync>>,
 }
 
@@ -47,20 +50,20 @@ pub struct DiscoverService {
 
 impl<'d> DiscoverService {
     pub fn new(
-        ttl: u32,
+        login_port: u16,
         discover_port: u16,
         checksum_seed: String,
-        ip_list: Option<Vec<IpAddr>>,
+        ip: IpAddr,
         discover_callback: Option<Box<dyn Fn(&Device, Vec<&Device>) + Send + Sync>>,
     ) -> Self {
         DiscoverService {
-            ttl,
+            login_port,
             discover_port,
-            ip_list,
+            ip,
             checksum_seed,
             listening_device: Arc::new(Mutex::new(HashMap::new())),
             stop_signal: Arc::new(Mutex::new(None)),
-            mdns_service: Arc::new(Mutex::new(None)),
+            mdns_daemon: Arc::new(Mutex::new(None)),
             discover_callback,
         }
     }
@@ -164,9 +167,9 @@ impl<'d> DiscoverService {
     pub async fn start_confirm_server(self: Arc<Self>) -> Result<()> {
         // 允许添加多个设备，调用stop函数手动停止
         let (tx, mut rx) = oneshot::channel::<()>();
-        let listener = TcpListener::bind(format!("0.0.0.0:{}", self.discover_port)).await?;
+        let listener = TcpListener::bind(format!("0.0.0.0:{}", self.login_port)).await?;
         self.stop_signal.lock().await.replace(tx);
-        info!("发现服务启动，端口: {}", self.discover_port);
+        info!("发现服务启动，端口: {}", self.login_port);
         loop {
             tokio::select! {
                 res = listener.accept() => {
@@ -199,34 +202,72 @@ impl<'d> DiscoverService {
     }
 
     pub async fn stop(&self) -> Result<()> {
+        // 1. 先发送停止信号，减少锁作用域
         if let Some(stop_signal) = self.stop_signal.lock().await.take() {
-            let _ = stop_signal.send(());
+            if let Err(_) = stop_signal.send(()) {
+                warn!("MDNS停止信号接收端已关闭");
+            }
         }
-        let _ = self.mdns_service.lock().await.take();
-        info!("发现服务已停止");
+
+        // 2. 获取daemon并立即释放锁
+        let daemon_opt = { self.mdns_daemon.lock().await.take() };
+
+        if let Some(daemon) = daemon_opt {
+            // 3. 使用循环而非递归，限制重试次数
+            const MAX_RETRIES: u32 = 5;
+            let mut retries = 0;
+
+            loop {
+                match daemon.shutdown() {
+                    Ok(_) => {
+                        info!("MDNS守护进程已成功停止");
+                        break;
+                    }
+                    Err(mdns_sd::Error::Again) if retries < MAX_RETRIES => {
+                        retries += 1;
+                        warn!("MDNS守护进程繁忙，重试停止 ({}/{})", retries, MAX_RETRIES);
+                        tokio::time::sleep(Duration::from_millis(100)).await;
+                        // continue 循环重试
+                    }
+                    Err(e) => {
+                        error!("MDNS守护进程停止失败：{}", e);
+                        return Err(e.into()); // 转换为通用Error
+                    }
+                }
+            }
+        } else {
+            info!("MDNS守护进程未运行或已停止");
+        }
+
         Ok(())
     }
 
     pub async fn discover(self: Arc<Self>) -> Result<()> {
-        if let Some(_) = self.mdns_service.lock().await.take() {
+        if self.mdns_daemon.lock().await.is_some() {
             return Err(anyhow!("The discover service is started!"));
         }
-        let responder = if let Some(ip_list) = &self.ip_list {
-            debug!("广播IP列表: {:?}", ip_list);
-            Responder::new_with_ip_list(ip_list.clone())?
-        } else {
-            Responder::new()
-        };
         let svc_type = execute_params::mdns_server_type();
         info!("MDNS服务名称：{svc_type:?}");
-        let server = responder.register_with_ttl(
-            svc_type.into(),
+
+        let mdns_daemon = ServiceDaemon::new().expect("Failed to create daemon");
+        info!("MDNS守护进程启动");
+        let host_name = self.ip.to_string() + ".local.";
+        let properties = vec![
+            ("login_port", self.login_port.to_string()),
+            ("discover_port", self.discover_port.to_string()),
+        ];
+        let service = ServiceInfo::new(
+            svc_type,
             &get_computer_name(),
+            &host_name,
+            self.ip,
             self.discover_port,
-            &[&format!("discover_port={}", self.discover_port)],
-            self.ttl,
-        );
-        self.mdns_service.lock().await.replace(server);
+            &properties[..],
+        )?;
+        mdns_daemon
+            .register(service)
+            .expect("Failed to register our service");
+        self.mdns_daemon.lock().await.replace(mdns_daemon);
         let service_clone = self.clone();
         tokio::spawn(async move {
             if let Err(e) = service_clone.start_confirm_server().await {

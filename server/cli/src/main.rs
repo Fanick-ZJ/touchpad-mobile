@@ -1,14 +1,16 @@
 use std::{
     net::{IpAddr, Ipv4Addr, Ipv6Addr},
     sync::Arc,
-    vec,
 };
 
-use anyhow::Result;
+use anyhow::{Result, anyhow, bail};
 use clap::Parser;
 use server_core_kit::{config::TouchpadConfig, logger::init_tracing};
 use server_discover::{device::Device, discover_service::DiscoverService};
-use shared_utils::execute_params;
+use shared_utils::{
+    execute_params,
+    interface::{enumerate_mdns_capable_interfaces, get_ip_by_name},
+};
 use tracing::{error, info};
 
 #[derive(Parser, Debug)]
@@ -30,20 +32,31 @@ async fn main() -> Result<()> {
     let check_seed = execute_params::hash_seed();
 
     // 获取指定的ip地址
-    let discover_service_ip = if config.discover_address.is_some() {
-        let addr = config.discover_address.unwrap();
+    let discover_service_ip = if config.ip.is_some() {
+        let addr = config.ip.unwrap();
         let ipv4 = addr.parse::<Ipv4Addr>();
         let ipv6 = addr.parse::<Ipv6Addr>();
         if ipv4.is_ok() {
-            Some(vec![IpAddr::V4(ipv4.unwrap())])
+            IpAddr::V4(ipv4.unwrap())
         } else if ipv6.is_ok() {
-            Some(vec![IpAddr::V6(ipv6.unwrap())])
+            IpAddr::V6(ipv6.unwrap())
         } else {
             error!("The discover service address is invalid");
-            None
+            return Err(anyhow!("Invalid discover service address"));
         }
     } else {
-        None
+        let inter_names = enumerate_mdns_capable_interfaces();
+        if inter_names.is_empty() {
+            error!("No network interface found");
+            return Err(anyhow!("No network interface found"));
+        }
+        let ip = get_ip_by_name(&inter_names[0], true);
+        if let Some(ip) = ip {
+            ip
+        } else {
+            error!("Failed to get IP address");
+            return Err(anyhow!("Failed to get IP address"));
+        }
     };
 
     let callback: Box<dyn Fn(&Device, Vec<&Device>) + Send + Sync> =
@@ -54,7 +67,7 @@ async fn main() -> Result<()> {
         });
 
     let discover_service = Arc::new(DiscoverService::new(
-        10,
+        config.login_port,
         config.discover_port,
         check_seed.to_string(),
         discover_service_ip,

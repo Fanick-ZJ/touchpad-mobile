@@ -1,5 +1,7 @@
 discover_port: 8521
-backend_port: 8522
+login_port: 8522
+backend_port: 8523
+discover_address: 192.168.5.4
 log_level: info
 cert_pem: ../certs/certificate.pem
 key_pem: ../certs/private.key.pem
