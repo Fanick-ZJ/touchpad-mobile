@@ -1,6 +1,5 @@
 use crate::device::Device;
 use anyhow::{Result, anyhow};
-use libmdns::Responder;
 use mdns_sd::{ServiceDaemon, ServiceInfo};
 use server_core_kit::codec::{dewrap, varint, wrap};
 use server_utils::sys::get_computer_name;
@@ -252,10 +251,7 @@ impl<'d> DiscoverService {
         let mdns_daemon = ServiceDaemon::new().expect("Failed to create daemon");
         info!("MDNS守护进程启动");
         let host_name = self.ip.to_string() + ".local.";
-        let properties = vec![
-            ("login_port", self.login_port.to_string()),
-            ("discover_port", self.discover_port.to_string()),
-        ];
+        let properties = vec![("login_port", self.login_port.to_string())];
         let service = ServiceInfo::new(
             svc_type,
             &get_computer_name(),

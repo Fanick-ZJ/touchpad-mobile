@@ -1,0 +1,3 @@
+discover = Discover
+control = Control
+settings = Settings

@@ -3,13 +3,18 @@ use std::{
     sync::{Arc, Mutex},
 };
 
+use anyhow::Result;
 use mdns_sd::{IfKind, ServiceDaemon};
+use serde::{Deserialize, Serialize};
 use shared_utils::execute_params;
-use tauri::State;
+use tauri::{AppHandle, Emitter, EventTarget, State};
 
+#[derive(Serialize, Deserialize, Clone, Debug)]
+#[serde(rename_all = "camelCase")]
 struct DiscoverDevice {
     name: String,
     address: IpAddr,
+    login_port: u16,
 }
 
 type SharedServiceDaemon = Arc<Mutex<ServiceDaemon>>;
@@ -42,19 +47,21 @@ fn initialize_shared_daemon() -> SharedServiceDaemon {
 }
 
 #[tauri::command]
-fn start_discover_service(state: State<ManagedState>) -> Result<(), String> {
+fn start_discover_service(app: AppHandle, state: State<ManagedState>) -> Result<(), String> {
     let daemon = state
         .daemon
         .lock()
         .map_err(|e| format!("Failed to lock daemon: {e:?}"))?;
 
+    let service_type = execute_params::mdns_server_type();
     // 先停止服务
     daemon
-        .stop_browse(execute_params::mdns_server_type())
+        .stop_browse(service_type)
         .map_err(|e| format!("Failed to stop discover_service"))?;
     let daemon = daemon.clone();
+    let devices_arc = state.devices.clone();
     tauri::async_runtime::spawn(async move {
-        let receiver = match daemon.browse(execute_params::mdns_server_type()) {
+        let receiver = match daemon.browse(service_type) {
             Ok(receiver) => receiver,
             Err(e) => {
                 log::error!("Failed to browse for service types: {e:?}");
@@ -67,19 +74,67 @@ fn start_discover_service(state: State<ManagedState>) -> Result<(), String> {
                     log::info!("start mdns discover service: {service_type}")
                 }
                 mdns_sd::ServiceEvent::ServiceFound(service_type, full_name) => {
-                    log::info!("found service: {full_name}")
+                    log::info!("found service: {service_type}")
                 }
                 mdns_sd::ServiceEvent::ServiceResolved(resolved_service) => {
-                    log::info!("service resolved: {:?}", resolved_service)
+                    log::info!("service resolved: {:?}", resolved_service);
+                    let target_name = resolved_service.fullname.rsplit(service_type).next();
+                    let ip = resolved_service.addresses.iter().next().map(|addr| addr);
+                    let login_port: Option<u16> = resolved_service
+                        .txt_properties
+                        .get_property_val_str("login_port")
+                        .and_then(|port| port.to_string().parse().ok());
+                    if let Some(target_name) = target_name {
+                        log::info!("target name: {}", target_name);
+                    } else {
+                        log::warn!("target name not found");
+                        continue;
+                    }
+                    if let Some(ip) = ip {
+                        log::info!("ip: {}", ip);
+                    } else {
+                        log::warn!("ip not found");
+                        continue;
+                    }
+                    if let Some(login_port) = login_port {
+                        log::info!("login port: {}", login_port);
+                    } else {
+                        log::warn!("login port not found");
+                        continue;
+                    }
+                    let device = DiscoverDevice {
+                        name: target_name.unwrap().to_string(),
+                        address: ip.unwrap().to_ip_addr(),
+                        login_port: login_port.unwrap(),
+                    };
+                    devices_arc.lock().unwrap().push(device.clone());
+                    log::info!("get device: {:?}", device);
+                    let _ = app.emit_to(EventTarget::app(), "found_device", device);
                 }
-                mdns_sd::ServiceEvent::ServiceRemoved(_, _) => todo!(),
-                mdns_sd::ServiceEvent::SearchStopped(_) => todo!(),
+                mdns_sd::ServiceEvent::ServiceRemoved(service_type, full_name) => {
+                    log::info!("service removed: {service_type} - {full_name}")
+                }
+                mdns_sd::ServiceEvent::SearchStopped(service_type) => {
+                    log::info!("search stopped: {service_type}")
+                }
                 _ => todo!(),
             }
         }
     });
     Ok(())
 }
+
+#[tauri::command]
+fn get_devices(state: State<ManagedState>) -> Result<Vec<DiscoverDevice>, String> {
+    let devices = state.devices.lock().unwrap().clone();
+    Ok(devices)
+}
+
+#[tauri::command]
+async fn get_language() -> Result<String, String> {
+    Ok(shared_utils::lang::translate::get_current_language().to_string())
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     use chrono::Utc;
@@ -111,7 +166,11 @@ pub fn run() {
         )
         .plugin(tauri_plugin_opener::init())
         .manage(ManagedState::new())
-        .invoke_handler(tauri::generate_handler![start_discover_service])
+        .invoke_handler(tauri::generate_handler![
+            start_discover_service,
+            get_devices,
+            get_language
+        ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }

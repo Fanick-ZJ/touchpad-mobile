@@ -1,5 +1,5 @@
 listen_addr: 8521
 log_level: info
-discover_address: 192.168.137.89
+ip: 192.168.5.4
 cert_pem: ../../certs/certificate.pem
 key_pem: ../../certs/private.key.pem

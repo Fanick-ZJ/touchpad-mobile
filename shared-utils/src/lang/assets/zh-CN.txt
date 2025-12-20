@@ -1,0 +1,3 @@
+discover = 发现
+control = 控制
+settings = 设置
