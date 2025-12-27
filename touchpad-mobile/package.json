@@ -1,9 +1,35 @@
 {
-	"devDependencies": {
-		"@tailwindcss/postcss": "^4.1.17",
-		"tailwindcss": "^4.1.17"
-	},
-	"dependencies": {
-		"@tauri-apps/plugin-log": "~2.7.1"
-	}
+  "name": "touchpad-mobile",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vue-tsc --noEmit && vite build",
+    "preview": "vite preview",
+    "tauri": "tauri"
+  },
+  "dependencies": {
+    "@tailwindcss/vite": "^4.1.18",
+    "@tauri-apps/api": "^2",
+    "@tauri-apps/plugin-log": "~2.7.1",
+    "@tauri-apps/plugin-opener": "^2",
+    "@varlet/ui": "^3.12.3",
+    "pinia": "^3.0.4",
+    "tailwindcss": "^4.1.18",
+    "vue": "^3.5.13",
+    "vue-router": "^4.6.4"
+  },
+  "devDependencies": {
+    "@tauri-apps/cli": "^2",
+    "@types/node": "^25.0.3",
+    "@varlet/import-resolver": "^3.12.3",
+    "@varlet/unplugin-icon-builder": "^0.6.0",
+    "@vitejs/plugin-vue": "^5.2.1",
+    "typescript": "~5.6.2",
+    "unplugin-auto-import": "^20.3.0",
+    "unplugin-vue-components": "^30.0.0",
+    "vite": "^6.0.3",
+    "vue-tsc": "^2.1.10"
+  }
 }

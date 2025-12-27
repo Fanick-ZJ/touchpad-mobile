@@ -11,7 +11,6 @@ members = [
     "server/core-kit",
     "server/discover",
     "server/utils",
-    "touchpad-mobile",
     "touchpad-mobile/src-tauri"
 ]
 resolver = "3"
@@ -50,6 +49,7 @@ log = "0.4.29"
 mdns-sd = "0.17.1"
 pnet = "0.35.0"
 sys-locale = "0.3.2"
+gethostname = "1.1.0"
 # self package
 shared-utils = { path = "./shared-utils" }
 touchpad-proto = { path = "./touchpad-proto" }

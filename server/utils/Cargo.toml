@@ -8,3 +8,4 @@ rand = { workspace = true }
 anyhow = { workspace = true }
 xxhash-rust = { workspace = true }
 shared-utils = { workspace = true }
+gethostname = { workspace = true }

@@ -4,9 +4,9 @@
   "version": "0.1.0",
   "identifier": "com.fanick.touchpad-mobile",
   "build": {
-    "beforeDevCommand": "trunk serve",
+    "beforeDevCommand": "pnpm dev",
     "devUrl": "http://localhost:1420",
-    "beforeBuildCommand": "trunk build",
+    "beforeBuildCommand": "pnpm build",
     "frontendDist": "../dist"
   },
   "app": {

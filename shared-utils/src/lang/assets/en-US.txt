@@ -1,3 +1,4 @@
 discover = Discover
 control = Control
 settings = Settings
+discover devices = Discover Devices

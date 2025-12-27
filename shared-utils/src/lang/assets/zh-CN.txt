@@ -1,3 +1,4 @@
 discover = 发现
 control = 控制
 settings = 设置
+discover devices = 发现设备

@@ -7,7 +7,7 @@ use anyhow::Result;
 use mdns_sd::{IfKind, ServiceDaemon};
 use serde::{Deserialize, Serialize};
 use shared_utils::execute_params;
-use tauri::{AppHandle, Emitter, EventTarget, State};
+use tauri::{utils::acl::resolved, AppHandle, Emitter, EventTarget, State};
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 #[serde(rename_all = "camelCase")]
@@ -78,7 +78,11 @@ fn start_discover_service(app: AppHandle, state: State<ManagedState>) -> Result<
                 }
                 mdns_sd::ServiceEvent::ServiceResolved(resolved_service) => {
                     log::info!("service resolved: {:?}", resolved_service);
-                    let target_name = resolved_service.fullname.rsplit(service_type).next();
+                    let domain_name = resolved_service.ty_domain;
+                    let target_name = resolved_service
+                        .fullname
+                        .split(&format!(".{domain_name}"))
+                        .next();
                     let ip = resolved_service.addresses.iter().next().map(|addr| addr);
                     let login_port: Option<u16> = resolved_service
                         .txt_properties
