@@ -34,8 +34,8 @@ watch(
 </script>
 
 <template>
-    <div class="container select-none flex flex-col w-screen h-screen">
-        <RouterView class="flex-1" />
+    <div class="h-full w-full flex flex-col">
+        <RouterView class="flex-1 overflow-hidden" />
         <var-bottom-navigation variant v-model:active="active">
             <var-bottom-navigation-item
                 label="发现"

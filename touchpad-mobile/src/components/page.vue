@@ -5,7 +5,7 @@ defineProps({
 </script>
 
 <template>
-    <div class="page bg-gray-100 max-h-full h-full flex flex-col">
+    <div class="page bg-gray-100 flex flex-col h-full overflow-hidden">
         <var-app-bar title-position="left" :elevation="false" safe-area-top>
             <h1 class="font-bold text-xl">{{ title }}</h1>
             <template #header-left>
@@ -18,11 +18,7 @@ defineProps({
                 <slot name="center"></slot>
             </template>
         </var-app-bar>
-        <div
-            class="content flex-1 flex flex-col gap-2"
-            direction="column"
-            size="large"
-        >
+        <div class="content flex-1 overflow-y-auto">
             <slot></slot>
         </div>
     </div>
