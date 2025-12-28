@@ -11,3 +11,5 @@ pub mod proto {
         include!(concat!(env!("OUT_DIR"), "/touchpad.v1.rs"));
     }
 }
+
+pub mod codec;

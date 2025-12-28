@@ -3,9 +3,20 @@ import { listen } from "@tauri-apps/api/event";
 
 const initListen = async () => {
   const deviceStore = useDeviceStore();
-  await listen<Device>("found_device", (event) => {
+  await listen<Device>("found-device", (event) => {
     console.log("Discover event received:", event.payload);
     deviceStore.addDevice(event.payload);
+  });
+
+  await listen("device-login", (event) => {
+    console.log("Device login event received:", event.payload);
+    // deviceStore.updateDeviceStatus(event.payload, "connected");
+  });
+
+  await listen<string>("device-offline", (event) => {
+    console.log("Device logout event received:", event.payload);
+    deviceStore.removeDevice(event.payload);
+    // deviceStore.updateDeviceStatus(event.payload, "disconnected");
   });
 };
 

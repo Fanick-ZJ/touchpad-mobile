@@ -3,10 +3,10 @@ use std::{
     sync::Arc,
 };
 
-use anyhow::{Result, anyhow, bail};
+use anyhow::{Result, anyhow};
 use clap::Parser;
-use server_core_kit::{config::TouchpadConfig, logger::init_tracing};
-use server_backend::{device::Device, discover_service::DiscoverService};
+use server_backend::discover_service::DiscoverService;
+use server_core_kit::{config::TouchpadConfig, device::Device, logger::init_tracing};
 use shared_utils::{
     execute_params,
     interface::{enumerate_mdns_capable_interfaces, get_ip_by_name},
@@ -68,13 +68,14 @@ async fn main() -> Result<()> {
 
     let discover_service = Arc::new(DiscoverService::new(
         config.login_port,
+        config.backend_port,
         config.discover_port,
         check_seed.to_string(),
         discover_service_ip,
         Some(callback),
     ));
-    discover_service.discover().await?;
     // 启动发现服务
+    discover_service.discover().await?;
     tokio::signal::ctrl_c().await?;
     Ok(())
 }

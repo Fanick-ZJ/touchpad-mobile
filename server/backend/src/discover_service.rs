@@ -1,7 +1,6 @@
-use crate::device::Device;
 use anyhow::{Result, anyhow};
 use mdns_sd::{ServiceDaemon, ServiceInfo};
-use server_core_kit::codec::{dewrap, varint, wrap};
+use server_core_kit::device::Device;
 use server_utils::sys::get_computer_name;
 use server_utils::token;
 use shared_utils::execute_params;
@@ -19,6 +18,7 @@ use tokio::{
         oneshot::{self},
     },
 };
+use touchpad_proto::codec::{ProtoStream, dewrap, varint, wrap, wrap_with_prefix};
 use touchpad_proto::proto::v1::{DiscoverValidation, ErrorCode, Reject, Welcome, wrapper::Payload};
 use tracing::{debug, error, info, warn};
 
@@ -29,6 +29,8 @@ pub struct DiscoverService {
     login_port: u16,
     // 发现服务的端口
     discover_port: u16,
+    // 后端服务的端口
+    backend_port: u16,
     // 用于启动mdns服务的IP
     ip: IpAddr,
     // 校验使用的字段
@@ -51,12 +53,14 @@ impl<'d> DiscoverService {
     pub fn new(
         login_port: u16,
         discover_port: u16,
+        backend_port: u16,
         checksum_seed: String,
         ip: IpAddr,
         discover_callback: Option<Box<dyn Fn(&Device, Vec<&Device>) + Send + Sync>>,
     ) -> Self {
         DiscoverService {
             login_port,
+            backend_port,
             discover_port,
             ip,
             checksum_seed,
@@ -71,7 +75,8 @@ impl<'d> DiscoverService {
     async fn discover_validation_handler(
         &self,
         dv: DiscoverValidation,
-        socket: &mut TcpStream,
+        addr: &SocketAddr,
+        stream: &mut ProtoStream,
     ) -> Result<Device> {
         info!("服务端使用SEED: '{}'", self.checksum_seed);
         let seed_checksum = xxh3_64(self.checksum_seed.as_bytes());
@@ -83,82 +88,68 @@ impl<'d> DiscoverService {
         );
         if dv.checksum == seed_checksum {
             let listening_device = self.listening_device.lock().await;
-            if let Ok(peer_addr) = socket.peer_addr() {
-                if listening_device.contains_key(&peer_addr.ip()) {
-                    let reject = Reject {
-                        reason: ErrorCode::RepeatedlyAddingDevices as i32,
-                    };
-                    let _ = socket.write(&wrap(&reject)?);
-                    warn!("重复添加设备被拒绝: {}", peer_addr.ip());
-                    return Err(anyhow!("Repeatedly adding devices"));
-                }
-
-                let token =
-                    token::get_first_token(&peer_addr.ip(), &dv.random_key, &dv.device_name)?;
-                let device = Device {
-                    name: dv.device_name,
-                    ip: peer_addr.ip(),
-                    width: dv.width,
-                    height: dv.height,
+            if listening_device.contains_key(&addr.ip()) {
+                let reject = Reject {
+                    reason: ErrorCode::RepeatedlyAddingDevices as i32,
                 };
-
-                let now = chrono::Utc::now().timestamp();
-                let welcome = Welcome {
-                    token,
-                    ts_ms: now as u64,
-                };
-
-                let response_with_prefix = varint::encode_with_length_prefix(&wrap(&welcome)?);
-                let _ = socket.write(&response_with_prefix).await;
-                Ok(device)
-            } else {
-                return Err(anyhow!("Failed to get peer address"));
+                let _ = stream.send_message(&reject);
+                warn!("重复添加设备被拒绝: {}", addr.ip());
+                return Err(anyhow!("Repeatedly adding devices"));
             }
+
+            let token = token::get_first_token(&addr.ip(), &dv.random_key, &dv.device_name)?;
+            let device = Device {
+                name: dv.device_name,
+                ip: addr.ip(),
+                width: dv.width,
+                height: dv.height,
+            };
+
+            let now = chrono::Utc::now().timestamp();
+            let welcome = Welcome {
+                token,
+                ts_ms: now as u64,
+            };
+
+            let _ = stream.send_message(&welcome).await;
+            Ok(device)
         } else {
             // 校验核不通过
             let reject = Reject {
                 reason: ErrorCode::HelloCheckSumMismatch as i32,
             };
-            let response_with_prefix = varint::encode_with_length_prefix(&wrap(&reject)?);
-            let _ = socket.write(&response_with_prefix).await;
-            info!(
-                "🚫 已向客户端发送拒绝消息，长度: {} 字节",
-                response_with_prefix.len()
-            );
+            let _ = stream.send_message(&reject).await;
+            info!("🚫 已向客户端发送拒绝消息");
             return Err(anyhow!("Failed to handle client connection"));
         }
     }
 
     async fn handle_client_connection(
         &self,
-        mut socket: TcpStream,
+        socket: TcpStream,
         addr: SocketAddr,
     ) -> Result<Device> {
-        let message_bytes = match varint::read_message_with_length_prefix(&mut socket).await {
+        let mut proto_stream = ProtoStream::from(socket);
+        let payload = match proto_stream.receive_message().await {
             Ok(bytes) => bytes,
             Err(e) => {
                 error!("读取消息失败 {}: {}", addr, e);
                 return Err(e);
             }
         };
-
-        if let Ok(payload) = dewrap(&message_bytes) {
-            // TODO: 解析校验码并返回设备信息
-            match payload {
-                Payload::DiscoverValidation(dv) => {
-                    // 校验验证核
-                    let device = self.discover_validation_handler(dv, &mut socket).await?;
-                    info!("验证设备成功: {}", device.name);
-                    return Ok(device);
-                }
-                _ => {
-                    warn!("收到未知消息类型");
-                    return Err(anyhow!("Received unknown payload"));
-                }
+        match payload {
+            Payload::DiscoverValidation(dv) => {
+                // 校验验证核
+                let device = self
+                    .discover_validation_handler(dv, &addr, &mut proto_stream)
+                    .await?;
+                info!("验证设备成功: {}", device.name);
+                return Ok(device);
             }
-        } else {
-            error!("解析消息数据失败");
-            return Err(anyhow!("Failed to handle client connection"));
+            _ => {
+                warn!("收到未知消息类型");
+                return Err(anyhow!("Received unknown payload"));
+            }
         }
     }
 
@@ -251,7 +242,10 @@ impl<'d> DiscoverService {
         let mdns_daemon = ServiceDaemon::new().expect("Failed to create daemon");
         info!("MDNS守护进程启动");
         let host_name = self.ip.to_string() + ".local.";
-        let properties = vec![("login_port", self.login_port.to_string())];
+        let properties = vec![
+            ("login_port", self.login_port.to_string()),
+            ("backend_port", self.backend_port.to_string()),
+        ];
         let service = ServiceInfo::new(
             svc_type,
             &get_computer_name(),

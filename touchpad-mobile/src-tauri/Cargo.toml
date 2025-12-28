@@ -18,18 +18,23 @@ crate-type = ["staticlib", "cdylib", "rlib"]
 tauri-build = { version = "2", features = [] }
 
 [dependencies]
-tauri = { version = "2", features = [] }
+tauri = { version = "2", features = ["wry"] }
 tauri-plugin-opener = "2"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 tauri-plugin-log = { version = "2" }
-mdns-sd = { workspace = true }
 thiserror = "2.0.17"
 ipconfig = "0.3.2"
 chrono = "0.4.42"
 fern = { version = "0.7.1", features = ["colored"] }
 anyhow = "1.0.100"
+xxhash-rust = { workspace = true, features = ["xxh3"] }
+rand = { workspace = true }
+tokio = { workspace = true }
+mdns-sd = { workspace = true }
 log = {workspace = true }
+tauri-plugin-os = "2"
 
 # self
 shared-utils = { workspace = true }
+touchpad-proto = { workspace = true }

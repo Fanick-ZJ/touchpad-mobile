@@ -2,8 +2,10 @@ import { defineStore } from "pinia";
 
 export type Device = {
   name: string;
+  fullName: string;
   address: string;
-  login_port: number;
+  loginPort: number;
+  backendPort: number;
 };
 
 export const useDeviceStore = defineStore("device", {
@@ -20,9 +22,9 @@ export const useDeviceStore = defineStore("device", {
       }
       this.devices.push(device);
     },
-    removeDevice(address: string) {
+    removeDevice(fullName: string) {
       this.devices = this.devices.filter(
-        (device) => device.address !== address,
+        (device) => device.fullName !== fullName,
       );
     },
     setCurrentDevice(device: Device) {

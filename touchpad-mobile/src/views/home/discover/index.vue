@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { onMounted } from "vue";
 import { Device, useDeviceStore } from "@/store/device";
-import { startDiscoverService } from "@/ipc/command";
+import { startDiscoverService, startConnection } from "@/ipc/command";
 import DiscoverDevice from "./discover_device.vue";
 import Page from "@/components/page.vue";
 import { useRouter } from "vue-router";
@@ -16,7 +16,8 @@ onMounted(async () => {
 const deviceClick = (device: Device) => {
     deviceStore.setCurrentDevice(device);
     // todo: 建立连接，跳转到控制页面
-    router.push({ path: "/control" });
+    startConnection(device);
+    // router.push({ path: "/control" });
 };
 </script>
 

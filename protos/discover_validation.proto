@@ -2,10 +2,10 @@ syntax = "proto3";
 package touchpad.v1;
 
 message DiscoverValidation {
-    fixed64 checksum = 1;
-    fixed32 send_ts = 2;
-    string device_name = 3;
-    string random_key = 4; // 发现设备时发送的随机key,最为第一次握手有通信的key值
-    uint32 width = 5;   // 设备的宽高
-    uint32 height = 6;
+  fixed64 checksum = 1;
+  fixed64 send_ts = 2;
+  string device_name = 3;
+  string random_key = 4; // 发现设备时发送的随机key,最为第一次握手有通信的key值
+  uint32 width = 5; // 设备的宽高
+  uint32 height = 6;
 }

@@ -1,9 +1,12 @@
+use super::proto::{self, v1::wrapper::Payload};
 use anyhow::{Result, anyhow};
 use prost::Message;
 use std::any::Any;
 use std::io::Read;
-use tokio::io::AsyncRead;
-use touchpad_proto::proto::{self, v1::wrapper::Payload};
+use tokio::{
+    io::{AsyncRead, AsyncWrite, AsyncWriteExt},
+    net::TcpStream,
+};
 use tracing::{debug, error};
 
 pub fn wrap<M: Message + 'static>(msg: &M) -> Result<Vec<u8>> {
@@ -41,6 +44,12 @@ pub fn dewrap(buf: &[u8]) -> Result<Payload> {
     } else {
         Err(anyhow!("The data payload is None"))
     }
+}
+
+/// Encode a protobuf message into a wrapper message with a length prefix.
+pub fn wrap_with_prefix<M: Message + 'static>(msg: &M) -> Result<Vec<u8>> {
+    let data = wrap(msg)?;
+    return Ok(varint::encode_with_length_prefix(&data));
 }
 
 pub mod varint {
@@ -199,5 +208,42 @@ pub mod varint {
 
     pub fn set_max_message_length(_max_length: u32) {
         tracing::warn!("Dynamic message length setting not implemented");
+    }
+}
+
+pub struct ProtoStream {
+    reader: Box<dyn AsyncRead + Unpin + Send>,
+    writer: Box<dyn AsyncWrite + Unpin + Send>,
+}
+
+impl From<TcpStream> for ProtoStream {
+    fn from(stream: TcpStream) -> Self {
+        let (reader, writer) = stream.into_split();
+        ProtoStream {
+            reader: Box::new(reader),
+            writer: Box::new(writer),
+        }
+    }
+}
+
+impl ProtoStream {
+    pub fn new(
+        reader: Box<dyn AsyncRead + Unpin + Send>,
+        writer: Box<dyn AsyncWrite + Unpin + Send>,
+    ) -> Self {
+        ProtoStream { reader, writer }
+    }
+
+    pub async fn send_message<M: Message + 'static>(&mut self, msg: &M) -> Result<()> {
+        let data = varint::encode_with_length_prefix(&wrap(msg)?);
+        self.writer.write_all(&data).await?;
+        self.writer.flush().await?;
+        Ok(())
+    }
+
+    pub async fn receive_message(&mut self) -> Result<Payload> {
+        let data = varint::read_message_with_length_prefix(&mut self.reader).await?;
+        let response = dewrap(&data)?;
+        Ok(response)
     }
 }
