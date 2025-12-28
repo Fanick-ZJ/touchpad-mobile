@@ -17,6 +17,6 @@ tracing-appender = { workspace = true }
 chrono = { workspace = true }
 
 server-core-kit = { workspace = true }
-server-discover = { workspace = true }
+server-backend = { workspace = true }
 server-utils = { workspace = true }
 shared-utils = { workspace = true }

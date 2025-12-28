@@ -9,7 +9,7 @@ members = [
     "touchpad-proto",
     "server/cli",
     "server/core-kit",
-    "server/discover",
+    "server/backend",
     "server/utils",
     "touchpad-mobile/src-tauri"
 ]
@@ -54,5 +54,5 @@ gethostname = "1.1.0"
 shared-utils = { path = "./shared-utils" }
 touchpad-proto = { path = "./touchpad-proto" }
 server-core-kit = { path = "./server/core-kit"}
-server-discover = { path = "./server/discover"}
+server-backend = { path = "./server/backend"}
 server-utils = { path = "./server/utils"}

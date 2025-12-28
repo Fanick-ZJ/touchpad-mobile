@@ -6,7 +6,7 @@ use std::{
 use anyhow::{Result, anyhow, bail};
 use clap::Parser;
 use server_core_kit::{config::TouchpadConfig, logger::init_tracing};
-use server_discover::{device::Device, discover_service::DiscoverService};
+use server_backend::{device::Device, discover_service::DiscoverService};
 use shared_utils::{
     execute_params,
     interface::{enumerate_mdns_capable_interfaces, get_ip_by_name},

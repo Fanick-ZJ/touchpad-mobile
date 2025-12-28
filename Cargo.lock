@@ -691,8 +691,8 @@ dependencies = [
  "prost",
  "quinn",
  "serde",
+ "server-backend",
  "server-core-kit",
- "server-discover",
  "server-utils",
  "shared-utils",
  "tokio",
@@ -4594,6 +4594,24 @@ dependencies = [
 ]
 
 [[package]]
+name = "server-backend"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "chrono",
+ "libmdns",
+ "local-ip-address",
+ "mdns-sd",
+ "server-core-kit",
+ "server-utils",
+ "shared-utils",
+ "tokio",
+ "touchpad-proto",
+ "tracing",
+ "xxhash-rust",
+]
+
+[[package]]
 name = "server-core-kit"
 version = "0.1.0"
 dependencies = [
@@ -4612,24 +4630,6 @@ dependencies = [
  "tracing",
  "tracing-appender",
  "tracing-subscriber",
-]
-
-[[package]]
-name = "server-discover"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "chrono",
- "libmdns",
- "local-ip-address",
- "mdns-sd",
- "server-core-kit",
- "server-utils",
- "shared-utils",
- "tokio",
- "touchpad-proto",
- "tracing",
- "xxhash-rust",
 ]
 
 [[package]]

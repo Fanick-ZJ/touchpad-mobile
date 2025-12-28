@@ -1,5 +1,5 @@
 [package]
-name = "server-discover"
+name = "server-backend"
 version.workspace = true
 edition.workspace = true
 

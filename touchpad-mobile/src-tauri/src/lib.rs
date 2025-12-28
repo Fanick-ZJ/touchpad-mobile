@@ -21,6 +21,7 @@ type SharedServiceDaemon = Arc<Mutex<ServiceDaemon>>;
 struct ManagedState {
     daemon: SharedServiceDaemon,
     devices: Arc<Mutex<Vec<DiscoverDevice>>>,
+    current_device: Arc<Mutex<Option<DiscoverDevice>>>,
     backend_screen: Arc<Mutex<bool>>,
 }
 
@@ -29,6 +30,7 @@ impl ManagedState {
         Self {
             daemon: initialize_shared_daemon(),
             devices: Arc::new(Mutex::new(vec![])),
+            current_device: Arc::new(Mutex::new(None)),
             backend_screen: Arc::new(Mutex::new(false)),
         }
     }
@@ -125,6 +127,17 @@ fn start_discover_service(app: AppHandle, state: State<ManagedState>) -> Result<
             }
         }
     });
+    Ok(())
+}
+
+#[tauri::command]
+fn set_current_device(state: State<ManagedState>, device: DiscoverDevice) -> Result<(), String> {
+    let mut current_device = state.current_device.lock().unwrap();
+    let old_device = current_device.take();
+    if old_device.is_some() {
+        // TODO: 结束连接
+    }
+    *current_device = Some(device);
     Ok(())
 }
 

@@ -25,5 +25,8 @@ export const useDeviceStore = defineStore("device", {
         (device) => device.address !== address,
       );
     },
+    setCurrentDevice(device: Device) {
+      this.current_device = device;
+    },
   },
 });
