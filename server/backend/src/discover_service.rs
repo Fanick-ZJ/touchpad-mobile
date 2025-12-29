@@ -11,19 +11,19 @@ use std::{
     time::Duration,
 };
 use tokio::{
-    io::AsyncWriteExt,
     net::{TcpListener, TcpStream},
     sync::{
         Mutex,
         oneshot::{self},
     },
 };
-use touchpad_proto::codec::{ProtoStream, dewrap, varint, wrap, wrap_with_prefix};
+use touchpad_proto::codec::ProtoStream;
 use touchpad_proto::proto::v1::{DiscoverValidation, ErrorCode, Reject, Welcome, wrapper::Payload};
 use tracing::{debug, error, info, warn};
 
 use xxhash_rust::xxh3::xxh3_64;
 
+type DeviceMap = Arc<Mutex<HashMap<IpAddr, Device>>>;
 pub struct DiscoverService {
     // 发现服务验证登录的端口
     login_port: u16,
@@ -36,7 +36,7 @@ pub struct DiscoverService {
     // 校验使用的字段
     checksum_seed: String,
     // 准备接受连接的设备
-    listening_device: Arc<Mutex<HashMap<IpAddr, Device>>>,
+    listening_device: DeviceMap,
     stop_signal: Arc<Mutex<Option<oneshot::Sender<()>>>>,
     mdns_daemon: Arc<Mutex<Option<ServiceDaemon>>>,
     discover_callback: Option<Box<dyn Fn(&Device, Vec<&Device>) + Send + Sync>>,
@@ -232,7 +232,7 @@ impl<'d> DiscoverService {
         Ok(())
     }
 
-    pub async fn discover(self: Arc<Self>) -> Result<()> {
+    pub async fn discover(self: &Arc<Self>) -> Result<()> {
         if self.mdns_daemon.lock().await.is_some() {
             return Err(anyhow!("The discover service is started!"));
         }
@@ -265,5 +265,9 @@ impl<'d> DiscoverService {
             }
         });
         Ok(())
+    }
+
+    pub fn listening_derive(self: &Arc<Self>) -> DeviceMap {
+        return self.listening_device.clone();
     }
 }

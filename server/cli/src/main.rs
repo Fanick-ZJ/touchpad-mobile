@@ -5,7 +5,7 @@ use std::{
 
 use anyhow::{Result, anyhow};
 use clap::Parser;
-use server_backend::discover_service::DiscoverService;
+use server_backend::{discover_service::DiscoverService, touch_server::TouchServer};
 use server_core_kit::{config::TouchpadConfig, device::Device, logger::init_tracing};
 use shared_utils::{
     execute_params,
@@ -33,7 +33,7 @@ async fn main() -> Result<()> {
 
     // 获取指定的ip地址
     let discover_service_ip = if config.ip.is_some() {
-        let addr = config.ip.unwrap();
+        let addr = config.ip.as_ref().unwrap();
         let ipv4 = addr.parse::<Ipv4Addr>();
         let ipv6 = addr.parse::<Ipv6Addr>();
         if ipv4.is_ok() {
@@ -76,6 +76,10 @@ async fn main() -> Result<()> {
     ));
     // 启动发现服务
     discover_service.discover().await?;
+    let listening_device = discover_service.listening_derive();
+    let touch_service = Arc::new(TouchServer::new(&config).await?);
+    touch_service.start().await?;
     tokio::signal::ctrl_c().await?;
+    touch_service.close().await;
     Ok(())
 }

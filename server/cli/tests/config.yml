@@ -1,5 +1,5 @@
 listen_addr: 8521
 log_level: info
 ip: 192.168.5.4
-cert_pem: ../../certs/certificate.pem
-key_pem: ../../certs/private.key.pem
+cert_pem: /home/fanick/work/rust/touchpad/certs/certificate.pem
+key_pem: /home/fanick/work/rust/touchpad/certs/private.key.pem

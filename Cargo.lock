@@ -4648,6 +4648,7 @@ dependencies = [
  "libmdns",
  "local-ip-address",
  "mdns-sd",
+ "quinn",
  "server-core-kit",
  "server-utils",
  "shared-utils",

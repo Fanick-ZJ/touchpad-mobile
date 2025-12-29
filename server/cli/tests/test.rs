@@ -1,9 +1,9 @@
 use std::{net::SocketAddr, path::Path, sync::Arc};
 
 use anyhow::Result;
+use server_backend::touch_server::TouchServer;
 use server_core_kit::{
     client::Client, common::read_cert, config::TouchpadConfig, inner_const::LOCALHOST_V4, logger,
-    server::Server,
 };
 
 use tracing::{error, info};
@@ -14,9 +14,9 @@ async fn server() -> Result<()> {
     let config = TouchpadConfig::from(&"tests/config.yml").unwrap();
     info!("Daemon started");
 
-    let server = Arc::new(Server::new(&config).await?);
+    let server = Arc::new(TouchServer::new(&config).await?);
     // 在后台启动服务器
-    let _ = tokio::join!(async { server.run_work().await });
+    let _ = tokio::join!(async { server.start().await });
     Ok(())
 }
 
