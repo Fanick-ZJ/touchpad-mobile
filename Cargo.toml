@@ -50,6 +50,9 @@ mdns-sd = "0.17.1"
 pnet = "0.35.0"
 sys-locale = "0.3.2"
 gethostname = "1.1.0"
+directories-next = "2.0.0"
+pem = "3.0.6"
+base64 = "0.22.1"
 # self package
 shared-utils = { path = "./shared-utils" }
 touchpad-proto = { path = "./touchpad-proto" }

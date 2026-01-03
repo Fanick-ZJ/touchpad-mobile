@@ -1,8 +1,8 @@
 use anyhow::{Result, anyhow};
+use base64::{Engine, engine::general_purpose};
 use mdns_sd::{ServiceDaemon, ServiceInfo};
 use server_core_kit::device::Device;
 use server_utils::sys::get_computer_name;
-use server_utils::token;
 use shared_utils::execute_params;
 use std::{
     collections::HashMap,
@@ -25,21 +25,26 @@ use xxhash_rust::xxh3::xxh3_64;
 
 type DeviceMap = Arc<Mutex<HashMap<IpAddr, Device>>>;
 pub struct DiscoverService {
-    // 发现服务验证登录的端口
+    /// 发现服务验证登录的端口
     login_port: u16,
-    // 发现服务的端口
+    /// 发现服务的端口
     discover_port: u16,
-    // 后端服务的端口
+    /// 后端服务的端口
     backend_port: u16,
-    // 用于启动mdns服务的IP
+    /// 用于启动mdns服务的IP
     ip: IpAddr,
-    // 校验使用的字段
+    /// 校验使用的字段
     checksum_seed: String,
-    // 准备接受连接的设备
+    /// 准备接受连接的设备
     listening_device: DeviceMap,
+    /// 停止信号
     stop_signal: Arc<Mutex<Option<oneshot::Sender<()>>>>,
+    /// 守护进程
     mdns_daemon: Arc<Mutex<Option<ServiceDaemon>>>,
+    /// 发现设后后的回调函数
     discover_callback: Option<Box<dyn Fn(&Device, Vec<&Device>) + Send + Sync>>,
+    /// 登录验证成功后的公钥
+    login_public_key: Vec<u8>,
 }
 
 /// 具体的发现步骤
@@ -56,6 +61,7 @@ impl<'d> DiscoverService {
         backend_port: u16,
         checksum_seed: String,
         ip: IpAddr,
+        login_public_key: Vec<u8>,
         discover_callback: Option<Box<dyn Fn(&Device, Vec<&Device>) + Send + Sync>>,
     ) -> Self {
         DiscoverService {
@@ -68,6 +74,7 @@ impl<'d> DiscoverService {
             stop_signal: Arc::new(Mutex::new(None)),
             mdns_daemon: Arc::new(Mutex::new(None)),
             discover_callback,
+            login_public_key,
         }
     }
 
@@ -97,7 +104,6 @@ impl<'d> DiscoverService {
                 return Err(anyhow!("Repeatedly adding devices"));
             }
 
-            let token = token::get_first_token(&addr.ip(), &dv.random_key, &dv.device_name)?;
             let device = Device {
                 name: dv.device_name,
                 ip: addr.ip(),
@@ -107,7 +113,7 @@ impl<'d> DiscoverService {
 
             let now = chrono::Utc::now().timestamp();
             let welcome = Welcome {
-                token,
+                cert_der: self.login_public_key.clone(),
                 ts_ms: now as u64,
             };
 

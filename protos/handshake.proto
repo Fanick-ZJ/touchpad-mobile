@@ -3,16 +3,12 @@ package touchpad.v1;
 
 import "error_code.proto";
 
-// 握手设计规则
-// 第一回token的规则为DiscoverValidation中的random_key + 移动端ip + DeviceName + env中的seed 做xxhash_64
-// 后续的token走在上一次的token上做xxhash_64
-
 // 服务器端响应握手请求
 message Welcome {
-    string token = 1;
-    uint64 ts_ms = 2;
+  bytes cert_der = 1; // 后续通讯的公钥
+  uint64 ts_ms = 2;
 }
 
 message Reject {
-    ErrorCode reason = 1;
+  ErrorCode reason = 1;
 }

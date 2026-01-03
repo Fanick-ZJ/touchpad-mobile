@@ -158,7 +158,6 @@ async fn connect_device(
     device: DiscoverDevice,
     window: Window,
     current_device: Arc<Mutex<Option<DiscoverDevice>>>,
-    token: Arc<Mutex<Option<String>>>,
 ) -> Result<(), ConnectionError> {
     // 构建验证数据
     let validation = build_validation(&window).await?;
@@ -185,14 +184,13 @@ async fn connect_device(
     // 处理业务逻辑
     match response_data {
         proto::v1::wrapper::Payload::Welcome(welcome) => {
-            log::debug!("收到欢迎消息，token: {}", welcome.token);
+            log::debug!("收到欢迎消息，公钥: {:?}", welcome.cert_der);
 
             // 发送成功事件到前端
             emit::device_login(&device)?;
             // 使用作用域限制锁的持有时间
             {
                 *current_device.lock().unwrap() = Some(device);
-                *token.lock().unwrap() = Some(welcome.token);
             }
         }
         proto::v1::wrapper::Payload::Reject(reject) => {
@@ -227,12 +225,11 @@ pub async fn start_connection(
 
     // 克隆需要的数据
     let current_device = state.current_device.clone();
-    let token = state.token.clone();
 
     // 使用异步运行时管理任务生命周期
     tokio::spawn(async move {
         // 执行连接逻辑
-        match connect_device(device, window.clone(), current_device, token).await {
+        match connect_device(device, window.clone(), current_device).await {
             Ok(()) => {
                 log::info!("设备连接成功");
                 // 可选：发送成功事件

@@ -30,8 +30,8 @@ pub struct TouchpadConfig {
     pub ip: Option<String>,
     #[serde(default = "default_log_level")]
     pub log_level: LogLevel,
-    pub cert_pem: String,
-    pub key_pem: String,
+    pub cert_pem: Option<String>,
+    pub key_pem: Option<String>,
 }
 
 fn default_port() -> u16 {

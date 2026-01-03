@@ -19,3 +19,5 @@ prost-types = { workspace = true }
 prost-reflect = { workspace = true }
 touchpad-proto = { workspace = true }
 rcgen = { workspace = true }
+pem = { workspace = true }
+directories-next = { workspace = true }

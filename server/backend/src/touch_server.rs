@@ -1,4 +1,8 @@
-use std::{collections::HashMap, net::SocketAddr, path::Path, sync::Arc};
+use std::{
+    collections::HashMap,
+    net::{IpAddr, SocketAddr},
+    sync::Arc,
+};
 
 use anyhow::Result;
 
@@ -6,14 +10,11 @@ use quinn::{
     Connection, Endpoint, ServerConfig,
     rustls::pki_types::{CertificateDer, PrivatePkcs8KeyDer},
 };
-use tokio::sync::{Notify, RwLock};
+use tokio::sync::{Mutex, RwLock, watch};
+use touchpad_proto::{codec::ProtoStream, proto::v1::wrapper::Payload};
 use tracing::{error, info};
 
-use server_core_kit::{
-    common::{read_cert, read_key},
-    config::TouchpadConfig,
-    inner_const::{LOCALHOST_V4, RECEIVE_SUCCESS, SERVER_STOP_CODE},
-};
+use server_core_kit::{device::Device, inner_const::LOCALHOST_V4};
 
 /// 创建服务段的配置
 pub fn configure_server(
@@ -28,13 +29,27 @@ pub fn configure_server(
     Ok(server_config)
 }
 
+pub struct TouchServerConfig {
+    pub server_port: u16,
+    pub cert_der: CertificateDer<'static>,
+    pub key_der: PrivatePkcs8KeyDer<'static>,
+}
+
+#[derive(Clone, Debug, PartialEq)]
+enum ShutdownSignal {
+    Empty,
+    ServerStop,
+    ConnectionClose(usize),
+}
+
 pub struct TouchServer {
     // 一个端点都对应一个UDP套接字
     pub endpoint: Endpoint,
     pub addr: SocketAddr,
-    shutdown: Arc<Notify>,
+    shutdown_tx: Mutex<Option<watch::Sender<ShutdownSignal>>>,
     connections: Arc<RwLock<HashMap<u64, ConnectionInfo>>>,
     server_handle: RwLock<Option<tokio::task::JoinHandle<()>>>,
+    valid_device: Arc<Mutex<HashMap<IpAddr, Device>>>,
 }
 
 struct ConnectionInfo {
@@ -43,89 +58,94 @@ struct ConnectionInfo {
 }
 
 impl TouchServer {
-    pub async fn new(config: &TouchpadConfig) -> Result<Self> {
+    pub async fn new(
+        config: &TouchServerConfig,
+        device_map: Arc<Mutex<HashMap<IpAddr, Device>>>,
+    ) -> Result<Self> {
         let server_config = Self::server_config(config).await?;
-        let ip_addr = SocketAddr::new(LOCALHOST_V4, config.backend_port);
+        let ip_addr = SocketAddr::new(LOCALHOST_V4, config.server_port);
         let endpoint = Endpoint::server(server_config, ip_addr)?;
-        let shutdown = Arc::new(Notify::new());
         info!("listening on {}", endpoint.local_addr()?);
         Ok(Self {
             endpoint,
             addr: ip_addr,
-            shutdown: Arc::clone(&shutdown),
+            shutdown_tx: Mutex::new(None),
             connections: Arc::new(RwLock::new(HashMap::new())),
             server_handle: RwLock::new(None),
+            valid_device: device_map,
         })
     }
 
     /// 创建服务段的配置
-    async fn server_config(config: &TouchpadConfig) -> Result<ServerConfig> {
-        let cert_der_path = Path::new(&config.cert_pem);
-        // 获取密钥文件
-        let cert_der = read_cert(&cert_der_path).await?;
-        let key_der_path = Path::new(&config.key_pem);
-        let key_der = read_key(&key_der_path).await?;
-        let server_config = configure_server(cert_der, key_der)?;
+    async fn server_config(config: &TouchServerConfig) -> Result<ServerConfig> {
+        let server_config = configure_server(config.cert_der.clone(), config.key_der.clone_key())?;
         info!("Server configuration created successfully");
         Ok(server_config)
     }
 
-    pub async fn wait_connect(&self) -> Result<()> {
+    pub async fn wait_connect(self: &Arc<Self>) -> Result<()> {
         info!("Waiting for connection...");
+        let (shutdown_tx, mut shutdown_rx) = watch::channel(ShutdownSignal::Empty);
+        self.shutdown_tx.lock().await.replace(shutdown_tx.clone());
         loop {
+            let shutdown_subscribe = shutdown_tx.subscribe();
             // 同时监听 shutdown 信号和新的双向流
             tokio::select! {
-                _ = self.shutdown.notified() => {
-                    info!("Shutdown signal received");
-                    // 关闭所有连接
-                    let conns = self.connections.read().await;
-                    for (id, info) in conns.iter() {
-                        info!("Closing connection: {}", id);
-                        // 关闭连接
-                        info.conn.close(0u8.into(), b"shutdown");
-                    }
-                    drop(conns);
-                    // 等待所有连接完成
-                    let mut conns = self.connections.write().await;
-                    for (id, info) in conns.drain() {
-                        info!("Waiting for connection: {}", id);
-                        let _ = info.task_handle.await;
-                        info!("Connection closed: {}", id);
-                    }
-                    break;
-                },
-                _ = async {
-                    // 不停的等待连接
-                    if let Some(incoming) = self.endpoint.accept().await {
-                        match incoming.await {
-                            Ok(conn) => {
-                                // 将接受到的连接记录，并给他开启任务处理器
-                                let conn_id = conn.stable_id() as u64;
-                                let shutdown = Arc::clone(&self.shutdown);
-                                let connection_map = Arc::clone(&self.connections);
-                                info!("New connection: {}", conn_id);
-                                let conn_clone = conn.clone();
-                                let task_handle = tokio::spawn(async move {
-                                    if let Err(e) = Self::handle_connect(conn_clone, shutdown).await {
-                                        error!("Failed to handle connection: {}", e);
-                                    }
-                                    connection_map.write().await.remove(&conn_id);
-                                });
-
-                                // 保存句柄
-                                let conn_info = ConnectionInfo {
-                                    conn: conn.clone(),
-                                    task_handle,
-                                };
-                                self.connections.write().await.insert(conn_id, conn_info);
-                            },
-                            Err(_) => {
-                                error!("Failed to accept connection");
-                            }
+                _ = shutdown_rx.changed() => {
+                    let value = shutdown_rx.borrow().clone();
+                    if value == ShutdownSignal::ServerStop {
+                        info!("Shutdown signal received");
+                        // 关闭所有连接
+                        let connections = self.connections.clone();
+                        let conns = connections.read().await;
+                        for (id, info) in conns.iter() {
+                            info!("Closing connection: {}", id);
+                            // 关闭连接
+                            info.conn.close(0u8.into(), b"shutdown");
                         }
+                        drop(conns);
+                        // 等待所有连接完成
+                        let mut conns = self.connections.write().await;
+                        for (id, info) in conns.drain() {
+                            info!("Waiting for connection: {}", id);
+                            let _ = info.task_handle.await;
+                            info!("Connection closed: {}", id);
+                        }
+                        break;
                     }
-                } => {
-                    info!("New connection established");
+                },
+                incoming = self.endpoint.accept() => {
+                    match incoming {
+                        Some(incoming) => {
+                            match incoming.await {
+                                Ok(conn) => {
+                                    // 将接受到的连接记录，并给他开启任务处理器
+                                    let conn_id = conn.stable_id() as u64;
+                                    let connection_map = Arc::clone(&self.connections);
+                                    info!("New connection: {}", conn_id);
+                                    let conn_clone = conn.clone();
+                                    let task_handle = tokio::spawn(async move {
+                                        let mut conn_client = ConnectedExector::new(conn_clone, shutdown_subscribe);
+                                        if let Err(err) = conn_client.start().await {
+                                            error!("Failed to client running: {}", err);
+                                        }
+                                        connection_map.write().await.remove(&conn_id);
+                                    });
+
+                                    // 保存句柄
+                                    let conn_info = ConnectionInfo {
+                                        conn: conn.clone(),
+                                        task_handle,
+                                    };
+                                    self.connections.write().await.insert(conn_id, conn_info);
+                                },
+                                Err(_) => {
+                                    error!("Failed to accept connection");
+                                }
+                            }
+                        },
+                        None => todo!(),
+                    }
                 }
             }
         }
@@ -145,17 +165,41 @@ impl TouchServer {
         Ok(())
     }
 
-    async fn handle_connect(conn: Connection, shutdown: Arc<Notify>) -> Result<()> {
+    pub async fn close(self: &Arc<Self>) {
+        if let Some(tx) = self.shutdown_tx.lock().await.take() {
+            let _ = tx.send(ShutdownSignal::ServerStop);
+        }
+    }
+}
+
+struct ConnectedExector {
+    conn: quinn::Connection,
+    /// 停止信号
+    stop_signal: watch::Receiver<ShutdownSignal>,
+}
+
+impl ConnectedExector {
+    fn new(conn: quinn::Connection, stop_signal: watch::Receiver<ShutdownSignal>) -> Self {
+        ConnectedExector { conn, stop_signal }
+    }
+
+    pub async fn start(&mut self) -> Result<bool> {
+        // 读取数据直到流结束
         loop {
             tokio::select! {
-                _ = shutdown.notified() => {
+                _ = self.stop_signal.changed() => {
+                    let value = self.stop_signal.borrow();
                     info!("Shutdown signal received");
-                    break;
+                    if *value == ShutdownSignal::ConnectionClose(self.conn.stable_id()) {
+                        info!("Closing connection");
+                        self.conn.close((0 as u8).into(), b"");
+                        break;
+                    }
                 },
-                accept_result = conn.accept_bi() => {
+                accept_result = self.conn.accept_bi() => {
                     match accept_result {
                         Ok((send, recv)) => {
-                            Self::handle_stream(send, recv).await?;
+                            self.handle_stream(send, recv).await?;
                         },
                         Err(e) => {
                             error!("Error accepting bidirectional stream: {}", e);
@@ -165,47 +209,32 @@ impl TouchServer {
                 }
             }
         }
-        Ok(())
-    }
-
-    async fn handle_stream(
-        mut send: quinn::SendStream,
-        mut recv: quinn::RecvStream,
-    ) -> Result<bool> {
-        let mut buff = [0u8; 64 * 1024];
-        let mut bytes = Vec::new();
-
-        // 读取数据直到流结束
-        loop {
-            match recv.read(&mut buff).await {
-                Ok(Some(length)) => {
-                    bytes.extend_from_slice(&buff[..length]);
-                }
-                Ok(None) => {
-                    // 流正常结束
-                    break;
-                }
-                Err(e) => {
-                    error!("Error reading from stream: {}", e);
-                    return Err(e.into());
-                }
-            }
-        }
-
-        info!("Received bytes length: {}", bytes.len());
-
-        // 写入完成信号
-        send.write_all(RECEIVE_SUCCESS.as_bytes()).await?;
-        send.finish()?;
-
-        info!(
-            "Received bytes content: {:?}",
-            String::from_utf8_lossy(&bytes)
-        );
         Ok(true)
     }
 
-    pub async fn close(&self) {
-        self.shutdown.notify_waiters();
+    async fn handle_stream(
+        &mut self,
+        send: quinn::SendStream,
+        recv: quinn::RecvStream,
+    ) -> Result<()> {
+        let mut proto_stream = ProtoStream::new(Box::new(recv), Box::new(send));
+        // 处理消息
+        while let Ok(message) = proto_stream.receive_message().await {
+            self.handle_message(message).await?;
+            todo!()
+        }
+
+        Ok(())
+    }
+
+    /// 处理消息，OK(False)代表推出连接
+    async fn handle_message(&self, message: Payload) -> Result<()> {
+        match message {
+            Payload::Welcome(welcome) => todo!(),
+            Payload::TouchPacket(touch_packet) => todo!(),
+            Payload::HeartBeat(heart_beat) => todo!(),
+            Payload::DiscoverValidation(discover_validation) => todo!(),
+            Payload::Reject(reject) => todo!(),
+        }
     }
 }

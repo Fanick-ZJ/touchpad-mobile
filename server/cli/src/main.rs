@@ -5,8 +5,13 @@ use std::{
 
 use anyhow::{Result, anyhow};
 use clap::Parser;
-use server_backend::{discover_service::DiscoverService, touch_server::TouchServer};
-use server_core_kit::{config::TouchpadConfig, device::Device, logger::init_tracing};
+use server_backend::{
+    discover_service::DiscoverService,
+    touch_server::{TouchServer, TouchServerConfig},
+};
+use server_core_kit::{
+    certificate::CertificateLoader, config::TouchpadConfig, device::Device, logger::init_tracing,
+};
 use shared_utils::{
     execute_params,
     interface::{enumerate_mdns_capable_interfaces, get_ip_by_name},
@@ -66,18 +71,28 @@ async fn main() -> Result<()> {
             info!("Device list: {:?}", device_list);
         });
 
+    let (cert_der, key_der) =
+        CertificateLoader::load_from_path(config.cert_pem, config.key_pem).await?;
+
+    let cert_string = cert_der.as_ref().to_vec();
     let discover_service = Arc::new(DiscoverService::new(
         config.login_port,
         config.backend_port,
         config.discover_port,
         check_seed.to_string(),
         discover_service_ip,
+        cert_string,
         Some(callback),
     ));
     // 启动发现服务
     discover_service.discover().await?;
+    let backend_config = TouchServerConfig {
+        server_port: config.backend_port,
+        cert_der: cert_der,
+        key_der: key_der,
+    };
     let listening_device = discover_service.listening_derive();
-    let touch_service = Arc::new(TouchServer::new(&config).await?);
+    let touch_service = Arc::new(TouchServer::new(&backend_config, listening_device).await?);
     touch_service.start().await?;
     tokio::signal::ctrl_c().await?;
     touch_service.close().await;
