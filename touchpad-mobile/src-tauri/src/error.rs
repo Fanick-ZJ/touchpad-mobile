@@ -14,4 +14,6 @@ pub enum ConnectionError {
     Rejected(String),
     #[error("意外响应类型")]
     UnexpectedResponse,
+    #[error("触摸服务器连接错误: {0}")]
+    TouchServerConnectError(String),
 }

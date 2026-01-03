@@ -1,5 +1,10 @@
-listen_addr: 8521
+# 发现服务端口 (默认 8521)
+discover_port: 8521
+# 登录服务端口 (默认 8522)
+login_port: 8522
+# 后端 QUIC 服务端口 (默认 8523)
+backend_port: 8521
 log_level: info
 ip: 192.168.5.4
-cert_pem: /home/fanick/work/rust/touchpad/certs/certificate.pem
-key_pem: /home/fanick/work/rust/touchpad/certs/private.key.pem
+# cert_pem: /home/fanick/work/rust/touchpad/certs/certificate.pem
+# key_pem: /home/fanick/work/rust/touchpad/certs/private.key.pem

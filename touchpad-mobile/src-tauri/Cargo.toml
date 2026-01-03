@@ -34,6 +34,8 @@ tokio = { workspace = true }
 mdns-sd = { workspace = true }
 log = {workspace = true }
 tauri-plugin-os = "2"
+quinn = { workspace = true }
+prost = { workspace = true }
 
 # self
 shared-utils = { workspace = true }

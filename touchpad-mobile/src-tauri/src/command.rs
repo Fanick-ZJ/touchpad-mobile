@@ -12,7 +12,9 @@ use xxhash_rust::xxh3::xxh3_64;
 use crate::{
     emit,
     error::ConnectionError,
+    quic::QuicClient,
     state::{DiscoverDevice, ManagedState},
+    QUIC_CLIENT,
 };
 
 /// 初始化发现的服务设备
@@ -162,9 +164,9 @@ async fn connect_device(
     // 构建验证数据
     let validation = build_validation(&window).await?;
 
-    // 建立连接
-    let addr = format!("{}:{}", device.address, device.login_port);
-    let stream = TcpStream::connect(&addr)
+    // 建立 TCP 连接用于登录验证 (使用 login_port)
+    let login_addr = format!("{}:{}", device.address, device.login_port);
+    let stream = TcpStream::connect(&login_addr)
         .await
         .map_err(|e| ConnectionError::NetworkError(e.to_string()))?;
     let mut proto_stream = ProtoStream::from(stream);
@@ -185,7 +187,18 @@ async fn connect_device(
     match response_data {
         proto::v1::wrapper::Payload::Welcome(welcome) => {
             log::debug!("收到欢迎消息，公钥: {:?}", welcome.cert_der);
-
+            let mut quic_client = QuicClient::new(welcome.cert_der);
+            // 使用 backend_port 建立 QUIC 连接
+            let backend_addr = format!("{}:{}", device.address, device.backend_port);
+            log::info!("准备连接 QUIC 服务器: {}", backend_addr);
+            log::info!("设备信息 - 地址: {}, login_port: {}, backend_port: {}",
+                device.address, device.login_port, device.backend_port);
+            if let Err(e) = quic_client.connect(&backend_addr).await {
+                log::error!("QUIC 连接失败: {:?}", e);
+                return Err(ConnectionError::TouchServerConnectError(e.to_string()));
+            }
+            QUIC_CLIENT.set(Arc::new(Mutex::new(quic_client)));
+            log::info!("QUIC 连接成功");
             // 发送成功事件到前端
             emit::device_login(&device)?;
             // 使用作用域限制锁的持有时间

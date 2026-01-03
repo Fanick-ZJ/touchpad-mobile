@@ -1,17 +1,20 @@
 mod command;
 mod emit;
 mod error;
+mod quic;
 mod state;
-use std::sync::OnceLock;
+use std::sync::{Arc, Mutex, OnceLock};
 
 use tauri::AppHandle;
 
 use crate::{
     command::{get_devices, get_language, start_connection, start_discover_service},
+    quic::QuicClient,
     state::ManagedState,
 };
 
 pub static APP_HANDLE: OnceLock<AppHandle> = OnceLock::new();
+pub static QUIC_CLIENT: OnceLock<Arc<Mutex<QuicClient>>> = OnceLock::new();
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {

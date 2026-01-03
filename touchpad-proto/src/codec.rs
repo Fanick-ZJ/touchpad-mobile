@@ -228,8 +228,8 @@ impl From<TcpStream> for ProtoStream {
 
 impl ProtoStream {
     pub fn new(
-        reader: Box<dyn AsyncRead + Unpin + Send>,
         writer: Box<dyn AsyncWrite + Unpin + Send>,
+        reader: Box<dyn AsyncRead + Unpin + Send>,
     ) -> Self {
         ProtoStream { reader, writer }
     }

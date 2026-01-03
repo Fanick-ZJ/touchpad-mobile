@@ -146,11 +146,18 @@ impl<'d> DiscoverService {
         match payload {
             Payload::DiscoverValidation(dv) => {
                 // 校验验证核
-                let device = self
+                if let Ok(device) = self
                     .discover_validation_handler(dv, &addr, &mut proto_stream)
-                    .await?;
-                info!("验证设备成功: {}", device.name);
-                return Ok(device);
+                    .await
+                {
+                    info!("验证设备成功: {}", device.name);
+                    return Ok(device);
+                } else {
+                    let reject = Reject { reason: 1 };
+                    let _ = proto_stream.send_message(&reject).await;
+                    info!("🚫 已向客户端发送拒绝消息");
+                    return Err(anyhow!("Failed to handle client connection"));
+                }
             }
             _ => {
                 warn!("收到未知消息类型");

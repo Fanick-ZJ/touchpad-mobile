@@ -63,7 +63,7 @@ impl TouchServer {
         device_map: Arc<Mutex<HashMap<IpAddr, Device>>>,
     ) -> Result<Self> {
         let server_config = Self::server_config(config).await?;
-        let ip_addr = SocketAddr::new(LOCALHOST_V4, config.server_port);
+        let ip_addr = SocketAddr::new(server_core_kit::inner_const::ANY_V4, config.server_port);
         let endpoint = Endpoint::server(server_config, ip_addr)?;
         info!("listening on {}", endpoint.local_addr()?);
         Ok(Self {
@@ -217,7 +217,7 @@ impl ConnectedExector {
         send: quinn::SendStream,
         recv: quinn::RecvStream,
     ) -> Result<()> {
-        let mut proto_stream = ProtoStream::new(Box::new(recv), Box::new(send));
+        let mut proto_stream = ProtoStream::new(Box::new(send), Box::new(recv));
         // 处理消息
         while let Ok(message) = proto_stream.receive_message().await {
             self.handle_message(message).await?;

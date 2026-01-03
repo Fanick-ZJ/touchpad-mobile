@@ -26,6 +26,7 @@ impl CertificateLoader {
 
         // 从应用数据目录加载
         let cert_dir = APP_HOME.data_dir().join("cert");
+        tracing::info!("证书目录: {}", cert_dir.display());
         fs::create_dir_all(&cert_dir)?; // 确保目录存在
 
         let cert_pem_path = cert_dir.join("cert.pem");
@@ -48,8 +49,7 @@ impl CertificateLoader {
 
     pub fn generate_certificate() -> Result<(CertificateDer<'static>, PrivatePkcs8KeyDer<'static>)>
     {
-        let mut params =
-            CertificateParams::new(vec!["localhost".to_string(), "127.0.0.1".to_string()])?;
+        let mut params = CertificateParams::new(vec!["touchpad.internal".to_string()])?;
 
         // 设置有效期
         let now = chrono::Local::now();
