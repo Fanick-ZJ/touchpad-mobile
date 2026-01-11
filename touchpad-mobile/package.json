@@ -10,16 +10,19 @@
     "tauri": "tauri"
   },
   "dependencies": {
+    "@bling-yshs/tauri-plugin-toast": "^0.0.1",
     "@tailwindcss/vite": "^4.1.18",
     "@tauri-apps/api": "^2",
     "@tauri-apps/plugin-log": "~2.7.1",
+    "@tauri-apps/plugin-notification": "~2.3.3",
     "@tauri-apps/plugin-opener": "^2",
     "@tauri-apps/plugin-os": "~2.3.2",
     "@varlet/ui": "^3.12.3",
     "pinia": "^3.0.4",
     "tailwindcss": "^4.1.18",
     "vue": "^3.5.13",
-    "vue-router": "^4.6.4"
+    "vue-router": "^4.6.4",
+    "vue3-touch-events": "^5.0.15"
   },
   "devDependencies": {
     "@tauri-apps/cli": "^2",

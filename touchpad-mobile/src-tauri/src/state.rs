@@ -1,12 +1,10 @@
-use std::{
-    net::IpAddr,
-    sync::{Arc, Mutex},
-};
+use std::{net::IpAddr, sync::Arc};
 
 use mdns_sd::{IfKind, ServiceDaemon};
 use serde::{Deserialize, Serialize};
+use tokio::sync::Mutex;
 
-#[derive(Serialize, Deserialize, Clone, Debug)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct DiscoverDevice {
     pub name: String,
@@ -20,7 +18,7 @@ pub type SharedServiceDaemon = Arc<Mutex<ServiceDaemon>>;
 pub struct ManagedState {
     pub daemon: SharedServiceDaemon,
     pub devices: Arc<Mutex<Vec<DiscoverDevice>>>,
-    pub current_device: Arc<Mutex<Option<DiscoverDevice>>>,
+    pub current_devices: Arc<Mutex<Vec<DiscoverDevice>>>,
     pub backend_screen: Arc<Mutex<bool>>,
     pub token: Arc<Mutex<Option<String>>>,
 }
@@ -30,7 +28,7 @@ impl ManagedState {
         Self {
             daemon: initialize_shared_daemon(),
             devices: Arc::new(Mutex::new(vec![])),
-            current_device: Arc::new(Mutex::new(None)),
+            current_devices: Arc::new(Mutex::new(vec![])),
             backend_screen: Arc::new(Mutex::new(false)),
             token: Arc::new(Mutex::new(None)),
         }

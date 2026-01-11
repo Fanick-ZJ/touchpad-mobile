@@ -7,7 +7,18 @@
     "core:default",
     "opener:default",
     "log:default",
-    "os:default"
+    "os:default",
+    "notification:default",
+    "toast:allow-show-toast",
+    {
+      "identifier": "notification:allow-is-permission-granted",
+      "allow": [
+        {
+          "window": "main",
+          "url": "http://localhost:1420"
+        }
+      ]
+    }
   ],
   "platforms": ["android"]
 }

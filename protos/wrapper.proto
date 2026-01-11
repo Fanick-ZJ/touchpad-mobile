@@ -12,6 +12,7 @@ message Wrapper {
     TouchPacket touch_packet      = 2;
     HeartBeat   heart_beat        = 3;
     DiscoverValidation discover_validation = 4;
-    Reject reject = 5;
+    Exit exit = 5;
+    Reject reject = 6;
   }
 }

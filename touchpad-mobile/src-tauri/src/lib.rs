@@ -3,18 +3,22 @@ mod emit;
 mod error;
 mod quic;
 mod state;
-use std::sync::{Arc, Mutex, OnceLock};
-
+use std::sync::{Arc, OnceLock};
 use tauri::AppHandle;
+use tauri_plugin_notification;
+use tauri_plugin_toast;
+use tokio::sync::Mutex;
 
 use crate::{
-    command::{get_devices, get_language, start_connection, start_discover_service},
+    command::{
+        disconnect_device, get_devices, get_language, start_connection, start_discover_service,
+    },
     quic::QuicClient,
     state::ManagedState,
 };
 
 pub static APP_HANDLE: OnceLock<AppHandle> = OnceLock::new();
-pub static QUIC_CLIENT: OnceLock<Arc<Mutex<QuicClient>>> = OnceLock::new();
+pub static QUIC_CLIENTS: OnceLock<Arc<Mutex<Vec<QuicClient>>>> = OnceLock::new();
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
@@ -28,12 +32,14 @@ pub fn run() {
     ];
     let colors = fern::colors::ColoredLevelConfig::default();
     tauri::Builder::default()
+        .plugin(tauri_plugin_notification::init())
         .setup(|app| {
             // 存储到全局变量
             APP_HANDLE.set(app.handle().clone()).unwrap();
             Ok(())
         })
         .plugin(tauri_plugin_os::init())
+        .plugin(tauri_plugin_toast::init())
         .plugin(
             tauri_plugin_log::Builder::new()
                 .targets(log_targets)
@@ -57,7 +63,8 @@ pub fn run() {
             start_discover_service,
             start_connection,
             get_devices,
-            get_language
+            get_language,
+            disconnect_device
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

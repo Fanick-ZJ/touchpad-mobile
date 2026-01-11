@@ -1,5 +1,7 @@
 #[derive(Debug, thiserror::Error)]
 pub enum ConnectionError {
+    #[error("多起连接错误: {0}")]
+    MultiConnectionError(String),
     #[error("获取显示器信息失败: {0}")]
     MonitorError(String),
     #[error("网络连接失败: {0}")]

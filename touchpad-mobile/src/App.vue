@@ -4,7 +4,7 @@ import { invoke } from "@tauri-apps/api/core";
 </script>
 
 <template>
-    <main class="h-full w-full overflow-hidden">
+    <main class="h-full w-full overflow-hidden select-none">
         <RouterView />
     </main>
 </template>

@@ -36,6 +36,8 @@ log = {workspace = true }
 tauri-plugin-os = "2"
 quinn = { workspace = true }
 prost = { workspace = true }
+tauri-plugin-notification = "2"
+tauri-plugin-toast = "0.0.2"
 
 # self
 shared-utils = { workspace = true }

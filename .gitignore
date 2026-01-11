@@ -2,6 +2,7 @@
 */target
 .idea
 .env
+.zed
 .vscode
 node_modules
 logs

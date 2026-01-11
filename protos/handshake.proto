@@ -9,6 +9,11 @@ message Welcome {
   uint64 ts_ms = 2;
 }
 
+// 连接推出信号
+message Exit {
+    uint64 ts_ms = 1;
+}
+
 message Reject {
   ErrorCode reason = 1;
 }

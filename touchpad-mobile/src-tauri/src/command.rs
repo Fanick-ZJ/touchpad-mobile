@@ -1,12 +1,16 @@
-use std::sync::{Arc, Mutex};
+use std::sync::Arc;
 
 use anyhow::Result;
 use mdns_sd::ResolvedService;
 use rand::Rng;
 use shared_utils::execute_params;
-use tauri::{AppHandle, State, Window};
+use tauri::{State, Window};
 use tokio::net::TcpStream;
-use touchpad_proto::{codec::ProtoStream, proto};
+use tokio::sync::Mutex;
+use touchpad_proto::{
+    codec::ProtoStream,
+    proto::{self, v1::Exit},
+};
 use xxhash_rust::xxh3::xxh3_64;
 
 use crate::{
@@ -14,7 +18,7 @@ use crate::{
     error::ConnectionError,
     quic::QuicClient,
     state::{DiscoverDevice, ManagedState},
-    QUIC_CLIENT,
+    QUIC_CLIENTS,
 };
 
 /// 初始化发现的服务设备
@@ -70,17 +74,14 @@ fn service_resolve_handler(resolved_service: Box<ResolvedService>) -> Option<Dis
 }
 
 #[tauri::command]
-pub fn start_discover_service(state: State<ManagedState>) -> Result<(), String> {
-    let daemon = state
-        .daemon
-        .lock()
-        .map_err(|e| format!("Failed to lock daemon: {e:?}"))?;
+pub async fn start_discover_service(state: State<'_, ManagedState>) -> Result<(), String> {
+    let daemon = state.daemon.lock().await;
 
     let service_type = execute_params::mdns_server_type();
     // 先停止服务
     daemon
         .stop_browse(service_type)
-        .map_err(|e| format!("Failed to stop discover_service"))?;
+        .map_err(|_e| format!("Failed to stop discover_service"))?;
     let daemon = daemon.clone();
     let devices_arc = state.devices.clone();
     tauri::async_runtime::spawn(async move {
@@ -96,13 +97,13 @@ pub fn start_discover_service(state: State<ManagedState>) -> Result<(), String> 
                 mdns_sd::ServiceEvent::SearchStarted(service_type) => {
                     log::info!("start mdns discover service: {service_type}")
                 }
-                mdns_sd::ServiceEvent::ServiceFound(service_type, full_name) => {
+                mdns_sd::ServiceEvent::ServiceFound(service_type, _full_name) => {
                     log::info!("found service: {service_type}")
                 }
                 mdns_sd::ServiceEvent::ServiceResolved(resolved_service) => {
                     let device = service_resolve_handler(resolved_service);
                     if let Some(device) = device {
-                        devices_arc.lock().unwrap().push(device.clone());
+                        devices_arc.lock().await.push(device.clone());
                         log::info!("get device: {:?}", device);
                         let _ = emit::found_device(&device);
                     } else {
@@ -114,7 +115,7 @@ pub fn start_discover_service(state: State<ManagedState>) -> Result<(), String> 
                         .split(&format!(".{service_type}"))
                         .next()
                         .unwrap_or_default();
-                    for device in devices_arc.lock().unwrap().iter_mut() {
+                    for device in devices_arc.lock().await.iter_mut() {
                         if device.name == hostname {
                             let _ = emit::device_offline(&full_name);
                             break;
@@ -159,7 +160,7 @@ async fn build_validation(
 async fn connect_device(
     device: DiscoverDevice,
     window: Window,
-    current_device: Arc<Mutex<Option<DiscoverDevice>>>,
+    connected_devices: Arc<Mutex<Vec<DiscoverDevice>>>,
 ) -> Result<(), ConnectionError> {
     // 构建验证数据
     let validation = build_validation(&window).await?;
@@ -191,20 +192,26 @@ async fn connect_device(
             // 使用 backend_port 建立 QUIC 连接
             let backend_addr = format!("{}:{}", device.address, device.backend_port);
             log::info!("准备连接 QUIC 服务器: {}", backend_addr);
-            log::info!("设备信息 - 地址: {}, login_port: {}, backend_port: {}",
-                device.address, device.login_port, device.backend_port);
+            log::info!(
+                "设备信息 - 地址: {}, login_port: {}, backend_port: {}",
+                device.address,
+                device.login_port,
+                device.backend_port
+            );
             if let Err(e) = quic_client.connect(&backend_addr).await {
                 log::error!("QUIC 连接失败: {:?}", e);
                 return Err(ConnectionError::TouchServerConnectError(e.to_string()));
             }
-            QUIC_CLIENT.set(Arc::new(Mutex::new(quic_client)));
+            let mut clients = QUIC_CLIENTS
+                .get_or_init(|| Arc::new(Mutex::new(vec![])))
+                .lock()
+                .await;
+            clients.push(quic_client);
             log::info!("QUIC 连接成功");
-            // 发送成功事件到前端
+            // 发送成功事件到前longTapHandler端
             emit::device_login(&device)?;
-            // 使用作用域限制锁的持有时间
-            {
-                *current_device.lock().unwrap() = Some(device);
-            }
+            // 更新当前设备
+            connected_devices.lock().await.push(device);
         }
         proto::v1::wrapper::Payload::Reject(reject) => {
             return Err(ConnectionError::Rejected(format!(
@@ -218,51 +225,88 @@ async fn connect_device(
     Ok(())
 }
 
+/// 检查设备是否已连接
+async fn check_device_has_connected(device: &DiscoverDevice) -> Result<(), String> {
+    let clients = QUIC_CLIENTS
+        .get_or_init(|| Arc::new(Mutex::new(vec![])))
+        .lock()
+        .await;
+    if clients
+        .iter()
+        .find(|d| d.remote_host().unwrap_or_default() == device.address.to_string())
+        .is_some()
+    {
+        Err("设备已连接".to_string())
+    } else {
+        Ok(())
+    }
+}
+
 // 主命令函数
 #[tauri::command]
 pub async fn start_connection(
     state: State<'_, ManagedState>,
     device: DiscoverDevice,
     window: Window,
-) -> Result<(), String> {
+) -> Result<bool, String> {
+    check_device_has_connected(&device).await?;
     // 提前释放旧设备
-    let old_device = {
-        let mut current_device = state.current_device.lock().unwrap();
-        current_device.take()
-    };
+    let current_devices = state.current_devices.clone();
 
-    if let Some(old) = old_device {
-        log::info!("断开旧设备: {:?}", old);
-        // TODO: 实际断开逻辑
-    }
-
-    // 克隆需要的数据
-    let current_device = state.current_device.clone();
-
-    // 使用异步运行时管理任务生命周期
-    tokio::spawn(async move {
-        // 执行连接逻辑
-        match connect_device(device, window.clone(), current_device).await {
-            Ok(()) => {
-                log::info!("设备连接成功");
-                // 可选：发送成功事件
-                let _ = emit::connect_success();
-            }
-            Err(e) => {
-                log::error!("设备连接失败: {}", e);
-                // 关键：将错误通知前端
-                let _ = emit::connect_error(&e.to_string());
-            }
+    // 执行连接逻辑
+    match connect_device(device, window.clone(), current_devices).await {
+        Ok(()) => {
+            log::info!("设备连接成功");
+            // 可选：发送成功事件
+            let _ = emit::connect_success();
+            Ok(true)
         }
-    });
+        Err(e) => {
+            log::error!("设备连接失败: {}", e);
+            // 关键：将错误通知前端
+            let _ = emit::connect_error(&e.to_string());
+            Ok(false)
+        }
+    }
+}
+
+#[tauri::command]
+/// 断开当前设备连接
+pub async fn disconnect_device(
+    state: State<'_, ManagedState>,
+    device: DiscoverDevice,
+) -> Result<(), String> {
+    let mut connected_devices = state.current_devices.lock().await;
+    if !connected_devices.contains(&device) {
+        return Err("设备未连接".to_string());
+    }
+    // 执行断开连接
+    if let Some(quic_clients) = QUIC_CLIENTS.get() {
+        let mut clients = quic_clients.lock().await;
+        if let Some(client) = clients
+            .iter_mut()
+            .find(|client| client.remote_host().unwrap_or_default() == device.address.to_string())
+        {
+            client.disconnect().await.map_err(|e| {
+                let s = format!("设备{}断开连接失败. {e}", device.name);
+                log::error!("{}", s);
+                s.to_string()
+            })?;
+            // 移除设备
+            connected_devices.retain(|dev| dev != &device);
+            clients.retain(|client| {
+                client.remote_host().unwrap_or_default() != device.address.to_string()
+            });
+        }
+    }
 
     Ok(())
 }
 
 #[tauri::command]
 /// 获取已发现的设备列表
-pub fn get_devices(state: State<ManagedState>) -> Result<Vec<DiscoverDevice>, String> {
-    let devices = state.devices.lock().unwrap().clone();
+pub async fn get_devices(state: State<'_, ManagedState>) -> Result<Vec<DiscoverDevice>, String> {
+    let devices = state.devices.lock().await.clone();
     Ok(devices)
 }
 

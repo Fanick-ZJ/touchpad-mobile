@@ -1,32 +1,36 @@
 <script setup lang="ts">
 import { onMounted } from "vue";
-import { Device, useDeviceStore } from "@/store/device";
-import { startDiscoverService, startConnection } from "@/ipc/command";
+import { useDeviceStore } from "@/store/device";
+import { startDiscoverService } from "@/ipc/command";
 import DiscoverDevice from "./discover_device.vue";
 import Page from "@/components/page.vue";
 import { useRouter } from "vue-router";
+import {
+  isPermissionGranted,
+  requestPermission,
+} from "@tauri-apps/plugin-notification";
 
 const deviceStore = useDeviceStore();
 const router = useRouter();
 
 onMounted(async () => {
-    await startDiscoverService();
-});
+  await startDiscoverService();
+  let permissionGranted = await isPermissionGranted();
 
-const deviceClick = (device: Device) => {
-    deviceStore.setCurrentDevice(device);
-    // todo: 建立连接，跳转到控制页面
-    startConnection(device);
-    // router.push({ path: "/control" });
-};
+  // If not we need to request it
+  if (!permissionGranted) {
+    const permission = await requestPermission();
+    permissionGranted = permission === "granted";
+  }
+});
 </script>
 
 <template>
-    <Page title="发现">
-        <div class="flex flex-col grap-2">
-            <template v-for="device in deviceStore.devices" :key="device.id">
-                <DiscoverDevice :device="device" @click="deviceClick(device)"
-            /></template>
-        </div>
-    </Page>
+  <Page title="发现">
+    <div class="flex flex-col grap-2">
+      <template v-for="device in deviceStore.devices" :key="device.address">
+        <DiscoverDevice :device="device"
+      /></template>
+    </div>
+  </Page>
 </template>

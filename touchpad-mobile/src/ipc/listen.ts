@@ -1,9 +1,10 @@
 import { Device, useDeviceStore } from "@/store/device";
 import { listen } from "@tauri-apps/api/event";
+import { DiscoverDevice } from "./types";
 
 const initListen = async () => {
   const deviceStore = useDeviceStore();
-  await listen<Device>("found-device", (event) => {
+  await listen<DiscoverDevice>("found-device", (event) => {
     console.log("Discover event received:", event.payload);
     deviceStore.addDevice(event.payload);
   });

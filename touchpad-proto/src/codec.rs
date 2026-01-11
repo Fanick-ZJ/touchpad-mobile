@@ -22,6 +22,8 @@ pub fn wrap<M: Message + 'static>(msg: &M) -> Result<Vec<u8>> {
                 Payload::HeartBeat(pb.clone())
             } else if let Some(pb) = (msg as &dyn Any).downcast_ref::<proto::v1::TouchPacket>() {
                 Payload::TouchPacket(pb.clone())
+            } else if let Some(pb) = (msg as &dyn Any).downcast_ref::<proto::v1::Exit>() {
+                Payload::Exit(pb.clone())
             } else if let Some(pb) =
                 (msg as &dyn Any).downcast_ref::<proto::v1::DiscoverValidation>()
             {

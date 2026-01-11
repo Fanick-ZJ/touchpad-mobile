@@ -122,14 +122,17 @@ impl TouchServer {
                                     // 将接受到的连接记录，并给他开启任务处理器
                                     let conn_id = conn.stable_id() as u64;
                                     let connection_map = Arc::clone(&self.connections);
+                                    let valid_device = Arc::clone(&self.valid_device);
                                     info!("New connection: {}", conn_id);
                                     let conn_clone = conn.clone();
+                                    let conn_ip = conn.remote_address().ip();
                                     let task_handle = tokio::spawn(async move {
                                         let mut conn_client = ConnectedExector::new(conn_clone, shutdown_subscribe);
                                         if let Err(err) = conn_client.start().await {
                                             error!("Failed to client running: {}", err);
                                         }
                                         connection_map.write().await.remove(&conn_id);
+                                        valid_device.lock().await.remove(&conn_ip);
                                     });
 
                                     // 保存句柄
@@ -174,13 +177,18 @@ impl TouchServer {
 
 struct ConnectedExector {
     conn: quinn::Connection,
+    done: bool,
     /// 停止信号
     stop_signal: watch::Receiver<ShutdownSignal>,
 }
 
 impl ConnectedExector {
     fn new(conn: quinn::Connection, stop_signal: watch::Receiver<ShutdownSignal>) -> Self {
-        ConnectedExector { conn, stop_signal }
+        ConnectedExector {
+            conn,
+            done: false,
+            stop_signal,
+        }
     }
 
     pub async fn start(&mut self) -> Result<bool> {
@@ -200,6 +208,9 @@ impl ConnectedExector {
                     match accept_result {
                         Ok((send, recv)) => {
                             self.handle_stream(send, recv).await?;
+                            if self.done {
+                                break;
+                            }
                         },
                         Err(e) => {
                             error!("Error accepting bidirectional stream: {}", e);
@@ -220,21 +231,29 @@ impl ConnectedExector {
         let mut proto_stream = ProtoStream::new(Box::new(send), Box::new(recv));
         // 处理消息
         while let Ok(message) = proto_stream.receive_message().await {
-            self.handle_message(message).await?;
-            todo!()
+            let need_continue = self.handle_message(message).await?;
+            if !need_continue {
+                self.done = true;
+                break;
+            }
         }
 
         Ok(())
     }
 
     /// 处理消息，OK(False)代表推出连接
-    async fn handle_message(&self, message: Payload) -> Result<()> {
+    async fn handle_message(&self, message: Payload) -> Result<bool> {
         match message {
             Payload::Welcome(welcome) => todo!(),
             Payload::TouchPacket(touch_packet) => todo!(),
             Payload::HeartBeat(heart_beat) => todo!(),
             Payload::DiscoverValidation(discover_validation) => todo!(),
             Payload::Reject(reject) => todo!(),
+            Payload::Exit(exit) => {
+                info!("Exiting connection: {:?}", self.conn.remote_address());
+                self.conn.close((0 as u8).into(), b"");
+                Ok(false)
+            }
         }
     }
 }
