@@ -46,6 +46,7 @@ const deviceDisconnect = async () => {
     await device.disconnect();
     deviceStore.removeControledDevice(device);
   }
+  menuRef.value?.close();
 };
 
 const emit = defineEmits<{

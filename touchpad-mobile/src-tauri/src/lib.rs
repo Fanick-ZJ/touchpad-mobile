@@ -3,6 +3,7 @@ mod emit;
 mod error;
 mod quic;
 mod state;
+mod types;
 use std::sync::{Arc, OnceLock};
 use tauri::AppHandle;
 use tauri_plugin_notification;
@@ -11,7 +12,8 @@ use tokio::sync::Mutex;
 
 use crate::{
     command::{
-        disconnect_device, get_devices, get_language, start_connection, start_discover_service,
+        disconnect_device, get_devices, get_language, send_touch_points, start_connection,
+        start_discover_service,
     },
     quic::QuicClient,
     state::ManagedState,
@@ -40,6 +42,7 @@ pub fn run() {
         })
         .plugin(tauri_plugin_os::init())
         .plugin(tauri_plugin_toast::init())
+        .plugin(tauri_plugin_fullscreen::init())
         .plugin(
             tauri_plugin_log::Builder::new()
                 .targets(log_targets)
@@ -64,7 +67,8 @@ pub fn run() {
             start_connection,
             get_devices,
             get_language,
-            disconnect_device
+            disconnect_device,
+            send_touch_points
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

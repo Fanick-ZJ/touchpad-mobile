@@ -9,15 +9,29 @@ const TouchEventTypes = {
   JOINED: "joined", //新的触控点加入
   LEFT: "left", //触控点离开
 } as const;
+type TouchEventTypes = (typeof TouchEventTypes)[keyof typeof TouchEventTypes];
 
 /**
  * 触摸状态
  */
 const TouchStatus = {
-  STARTED: "started", //触控正式开始
-  MOVING: "moving", //触控移动中
-  ENDED: "ended", //触控结束
+  Add: 0, //触控正式开始
+  Move: 1, //触控移动中
+  Leave: 2, //触控结束
 } as const;
+type TouchStatus = (typeof TouchStatus)[keyof typeof TouchStatus];
+
+/**
+ * 前端触控点
+ * 对应Rust后端的FrontTouchPoint类型
+ * @see src-tauri/src/types.rs:FrontTouchPoint
+ */
+export interface FrontTouchPoint {
+  tracking_id: number;
+  status: TouchStatus;
+  x: number;
+  y: number;
+}
 
 /**
  * 设备信息
@@ -72,8 +86,7 @@ export interface IPCEventPayloads {
  * 确保事件名称和载荷类型匹配
  */
 export type EventListener<Event extends keyof IPCEventPayloads> = (
-  payload: IPCEventPayloads[Event]
+  payload: IPCEventPayloads[Event],
 ) => void | Promise<void>;
 
 export { TouchEventTypes, TouchStatus };
-

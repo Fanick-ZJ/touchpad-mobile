@@ -1,6 +1,8 @@
 use std::{
     collections::HashMap,
+    fmt::Debug,
     net::{IpAddr, SocketAddr},
+    str::FromStr,
     sync::Arc,
 };
 
@@ -10,11 +12,21 @@ use quinn::{
     Connection, Endpoint, ServerConfig,
     rustls::pki_types::{CertificateDer, PrivatePkcs8KeyDer},
 };
-use tokio::sync::{Mutex, RwLock, watch};
-use touchpad_proto::{codec::ProtoStream, proto::v1::wrapper::Payload};
-use tracing::{error, info};
+use tokio::sync::{
+    Mutex, RwLock,
+    mpsc::{self, Receiver},
+    watch,
+};
+use touchpad_proto::{
+    codec::ProtoStream,
+    proto::v1::{TouchEventType, wrapper::Payload},
+};
+use tracing::{debug, error, info};
 
-use server_core_kit::{device::Device, inner_const::LOCALHOST_V4};
+use server_core_kit::{
+    device::Device,
+    driver::{Driver, TouchPoint, TouchStatus},
+};
 
 /// 创建服务段的配置
 pub fn configure_server(
@@ -49,7 +61,9 @@ pub struct TouchServer {
     shutdown_tx: Mutex<Option<watch::Sender<ShutdownSignal>>>,
     connections: Arc<RwLock<HashMap<u64, ConnectionInfo>>>,
     server_handle: RwLock<Option<tokio::task::JoinHandle<()>>>,
-    valid_device: Arc<Mutex<HashMap<IpAddr, Device>>>,
+    connected_device: Arc<Mutex<HashMap<IpAddr, Device>>>,
+    touch_driver: Arc<std::sync::Mutex<Driver>>,
+    touch_event_tx: mpsc::UnboundedSender<TouchPoint>,
 }
 
 struct ConnectionInfo {
@@ -66,14 +80,64 @@ impl TouchServer {
         let ip_addr = SocketAddr::new(server_core_kit::inner_const::ANY_V4, config.server_port);
         let endpoint = Endpoint::server(server_config, ip_addr)?;
         info!("listening on {}", endpoint.local_addr()?);
-        Ok(Self {
+        let (touch_event_tx, touch_event_rx) = mpsc::unbounded_channel();
+        let touch_driver = Arc::new(std::sync::Mutex::new(Driver::new(1920, 1080)?));
+
+        // 启动触控事件处理任务
+        let driver_clone = Arc::clone(&touch_driver);
+        tokio::spawn(async move {
+            Self::touch_event_processor(driver_clone, touch_event_rx).await;
+        });
+
+        let touch_server = Self {
             endpoint,
             addr: ip_addr,
             shutdown_tx: Mutex::new(None),
             connections: Arc::new(RwLock::new(HashMap::new())),
             server_handle: RwLock::new(None),
-            valid_device: device_map,
-        })
+            connected_device: device_map,
+            touch_driver,
+            touch_event_tx,
+        };
+        Ok(touch_server)
+    }
+
+    /// 触控事件处理器 - 专门的任务处理触控事件，不阻塞网络 I/O
+    async fn touch_event_processor(
+        driver: Arc<std::sync::Mutex<Driver>>,
+        mut event_rx: mpsc::UnboundedReceiver<TouchPoint>,
+    ) {
+        // 批量处理缓冲区
+        let mut buffer = Vec::with_capacity(64);
+
+        loop {
+            buffer.clear();
+
+            // 批量接收事件（最多 64 个或等待 1ms）
+            let first = match event_rx.recv().await {
+                Some(event) => event,
+                None => break, // channel 关闭
+            };
+            buffer.push(first);
+
+            // 收集更多事件（非阻塞）
+            for _ in 0..63 {
+                match event_rx.try_recv() {
+                    Ok(event) => buffer.push(event),
+                    Err(_) => break,
+                }
+            }
+
+            // 批量处理 - 使用 std::sync::Mutex，快速且不跨 await
+            if let Ok(mut driver) = driver.lock() {
+                for point in &buffer {
+                    debug!("Emitting touch event: {:?}", point);
+                    if let Err(e) = driver.emit_multitouch(std::slice::from_ref(point)) {
+                        error!("Failed to emit touch event: {}", e);
+                    }
+                }
+            }
+        }
     }
 
     /// 创建服务段的配置
@@ -122,17 +186,23 @@ impl TouchServer {
                                     // 将接受到的连接记录，并给他开启任务处理器
                                     let conn_id = conn.stable_id() as u64;
                                     let connection_map = Arc::clone(&self.connections);
-                                    let valid_device = Arc::clone(&self.valid_device);
+                                    let connected_device = Arc::clone(&self.connected_device);
                                     info!("New connection: {}", conn_id);
                                     let conn_clone = conn.clone();
                                     let conn_ip = conn.remote_address().ip();
+                                    let touch_event_tx = self.touch_event_tx.clone();
                                     let task_handle = tokio::spawn(async move {
-                                        let mut conn_client = ConnectedExector::new(conn_clone, shutdown_subscribe);
+                                        let mut conn_client = ConnectedExector::new(
+                                            conn_clone,
+                                            Arc::clone(&connected_device),
+                                            shutdown_subscribe,
+                                            touch_event_tx
+                                        );
                                         if let Err(err) = conn_client.start().await {
                                             error!("Failed to client running: {}", err);
                                         }
                                         connection_map.write().await.remove(&conn_id);
-                                        valid_device.lock().await.remove(&conn_ip);
+                                        connected_device.lock().await.remove(&conn_ip);
                                     });
 
                                     // 保存句柄
@@ -178,16 +248,25 @@ impl TouchServer {
 struct ConnectedExector {
     conn: quinn::Connection,
     done: bool,
+    connected_device: Arc<Mutex<HashMap<IpAddr, Device>>>,
+    touch_event_tx: mpsc::UnboundedSender<TouchPoint>,
     /// 停止信号
     stop_signal: watch::Receiver<ShutdownSignal>,
 }
 
 impl ConnectedExector {
-    fn new(conn: quinn::Connection, stop_signal: watch::Receiver<ShutdownSignal>) -> Self {
+    fn new(
+        conn: quinn::Connection,
+        connected_device: Arc<Mutex<HashMap<IpAddr, Device>>>,
+        stop_signal: watch::Receiver<ShutdownSignal>,
+        touch_event_tx: mpsc::UnboundedSender<TouchPoint>,
+    ) -> Self {
         ConnectedExector {
             conn,
             done: false,
+            connected_device,
             stop_signal,
+            touch_event_tx,
         }
     }
 
@@ -244,16 +323,54 @@ impl ConnectedExector {
     /// 处理消息，OK(False)代表推出连接
     async fn handle_message(&self, message: Payload) -> Result<bool> {
         match message {
-            Payload::Welcome(welcome) => todo!(),
-            Payload::TouchPacket(touch_packet) => todo!(),
-            Payload::HeartBeat(heart_beat) => todo!(),
-            Payload::DiscoverValidation(discover_validation) => todo!(),
-            Payload::Reject(reject) => todo!(),
+            Payload::RegisterDevice(device) => {
+                let device = Device {
+                    name: device.device_name,
+                    ip: IpAddr::from_str(&device.ip)?,
+                    width: device.width,
+                    height: device.height,
+                };
+                self.connected_device.lock().await.insert(device.ip, device);
+
+                Ok(true)
+            },
+            Payload::TouchPacket(touch_packet) => {
+                debug!("接受触控事件: {:?}", touch_packet);
+                // 通过 channel 发送触控事件，不阻塞网络 I/O
+                for pointer in touch_packet.pointers {
+                    let tracking_id = if pointer.event_type != TouchEventType::Up as i32 {
+                        pointer.id
+                    } else {
+                        -1
+                    };
+                    let status = match TouchEventType::try_from(pointer.event_type) {
+                        Ok(TouchEventType::Down) => TouchStatus::Down,
+                        Ok(TouchEventType::Move) => TouchStatus::Move,
+                        Ok(TouchEventType::Up) => TouchStatus::Up,
+                        Ok(TouchEventType::Cancel) => TouchStatus::Up, // 如果需要处理 Cancel
+                        Ok(TouchEventType::Unspecified) => continue,   // 跳过未指定的
+                        Err(_) => continue,                            // 跳过无效值
+                    };
+
+                    let touch_point = TouchPoint {
+                        slot: pointer.id,
+                        tracking_id,
+                        x: pointer.abs_x as i32,
+                        y: pointer.abs_y as i32,
+                        status,
+                    };
+
+                    // 非阻塞发送，如果 channel 满了则丢弃（避免阻塞网络处理）
+                    let _ = self.touch_event_tx.send(touch_point);
+                }
+                Ok(true)
+            },
             Payload::Exit(exit) => {
                 info!("Exiting connection: {:?}", self.conn.remote_address());
                 self.conn.close((0 as u8).into(), b"");
                 Ok(false)
-            }
+            },
+            _ => Ok(true),
         }
     }
 }

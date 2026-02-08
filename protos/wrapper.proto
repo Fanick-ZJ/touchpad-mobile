@@ -5,6 +5,7 @@ import "discover_validation.proto";
 import "touch_packet.proto";
 import "handshake.proto";
 import "heartbeat.proto";
+import "register_device.proto";
 
 message Wrapper {
   oneof payload {
@@ -14,5 +15,6 @@ message Wrapper {
     DiscoverValidation discover_validation = 4;
     Exit exit = 5;
     Reject reject = 6;
+    RegisterDevice register_device = 7;
   }
 }

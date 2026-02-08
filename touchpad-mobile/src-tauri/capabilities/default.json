@@ -10,6 +10,8 @@
     "os:default",
     "notification:default",
     "toast:allow-show-toast",
+    "fullscreen:allow-full",
+    "fullscreen:allow-exit",
     {
       "identifier": "notification:allow-is-permission-granted",
       "allow": [

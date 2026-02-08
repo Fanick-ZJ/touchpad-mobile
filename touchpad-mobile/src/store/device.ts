@@ -1,5 +1,9 @@
-import { startConnection, disconnectDevice } from "@/ipc/command";
-import { DiscoverDevice } from "@/ipc/types";
+import {
+  startConnection,
+  disconnectDevice,
+  sendTouchPoints,
+} from "@/ipc/command";
+import { DiscoverDevice, FrontTouchPoint } from "@/ipc/types";
 import { showToast } from "@bling-yshs/tauri-plugin-toast";
 import { defineStore } from "pinia";
 
@@ -64,6 +68,14 @@ export const useDeviceStore = defineStore("device", {
     },
     isControledDevice(device: Device) {
       return this.controledDevices.includes(device);
+    },
+    sendTouchPoints(device: Device, points: FrontTouchPoint[]) {
+      sendTouchPoints(device, points);
+    },
+    sendTouchPointsConnected(points: FrontTouchPoint[]) {
+      for (const device of this.controledDevices) {
+        sendTouchPoints(device, points);
+      }
     },
   },
 });

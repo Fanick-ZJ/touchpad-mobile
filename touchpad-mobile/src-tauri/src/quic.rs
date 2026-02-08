@@ -1,4 +1,4 @@
-use std::{net::SocketAddr, str::FromStr, sync::Arc, time::Instant};
+use std::{net::SocketAddr, str::FromStr, sync::Arc};
 
 use anyhow::{anyhow, Result};
 use log::info;
@@ -19,6 +19,7 @@ pub struct QuicClient {
     proto_stream: Option<ProtoStream>,
     remote_addr: Option<SocketAddr>,
     paused: Arc<RwLock<bool>>,
+    touch_pack_count: Arc<RwLock<u32>>,
 }
 
 impl QuicClient {
@@ -29,6 +30,7 @@ impl QuicClient {
             proto_stream: None,
             remote_addr: None,
             paused: Arc::new(RwLock::new(false)),
+            touch_pack_count: Arc::new(RwLock::new(0)),
         }
     }
 
@@ -122,6 +124,15 @@ impl QuicClient {
             self.remote_addr.take();
             self.proto_stream.take();
         }
+        Ok(())
+    }
+
+    pub async fn touch_pack_count(&mut self) -> u32 {
+        *self.touch_pack_count.read().await
+    }
+
+    pub async fn increment_touch_pack_count(&mut self) -> Result<()> {
+        *self.touch_pack_count.write().await += 1;
         Ok(())
     }
 }

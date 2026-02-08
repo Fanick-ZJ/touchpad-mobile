@@ -1,0 +1,9 @@
+syntax = "proto3";
+package touchpad.v1;
+
+message RegisterDevice {
+  string device_name = 1;
+  string ip = 2;
+  uint32 width = 3;
+  uint32 height = 4;
+}

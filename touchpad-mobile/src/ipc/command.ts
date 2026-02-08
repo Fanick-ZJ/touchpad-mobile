@@ -1,5 +1,6 @@
 import { Device } from "@/store/device";
 import { invoke } from "@tauri-apps/api/core";
+import { FrontTouchPoint } from "./types";
 
 const startDiscoverService = async () => {
   await invoke("start_discover_service");
@@ -13,4 +14,16 @@ const disconnectDevice = async (device: Device): Promise<Boolean> => {
   return await invoke("disconnect_device", { device });
 };
 
-export { startDiscoverService, startConnection, disconnectDevice };
+const sendTouchPoints = async (
+  device: Device,
+  points: Array<FrontTouchPoint>,
+): Promise<Boolean> => {
+  return await invoke("send_touch_points", { device, touchPoints: points });
+};
+
+export {
+  startDiscoverService,
+  startConnection,
+  disconnectDevice,
+  sendTouchPoints,
+};

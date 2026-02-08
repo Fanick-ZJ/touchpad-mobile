@@ -4,44 +4,28 @@ package touchpad.v1;
 // 主消息：一条网络包只含一个 TouchPacket
 message TouchPacket {
   //---- 头部（必须存在，8 byte 以内） ----//
-  uint64 ts_ms = 1;          // 手机开机毫秒，用于乱序重排 & 延迟计算
-  uint32 seq = 2;            // 自增序列号，方便丢包统计
+  uint64 ts_ms = 1; // 手机开机毫秒，用于乱序重排 & 延迟计算
+  uint32 seq = 2; // 自增序列号，方便丢包统计
 
   //---- 业务数据 ----//
-  repeated Pointer pointers = 3;  // 多点触控，通常 1-5 个
-  GestureType gesture = 4;        // 手势识别结果，若无手势则 NONE
-  sint32 scroll_dx = 5;           // 双指滚动增量，无滚动则 0
-  sint32 scroll_dy = 6;           // 双指滚动增量，无滚动则 0
+  repeated Pointer pointers = 3; // 多点触控，通常 1-5 个
 
   //---- 扩展预留 ----//
-  bytes reserved = 15;            // 自定义扩展，暂时留空
+  bytes reserved = 15; // 自定义扩展，暂时留空
 }
 
 // 单点信息
 message Pointer {
-  uint32 id = 1;         // Android pointerId / iOS touch.identifier
-  uint32 x = 2;          // 绝对坐标 0..32767 （放大避免浮点）
-  uint32 y = 3;          // 绝对坐标 0..32767
-  uint32 pressure = 4;   // 0..1023，无压感设备填 1023
-  ToolType tool = 5;     // 手指、笔、鼠标
-  uint32 contact_size = 6; // 接触面直径，单位 0.1 mm，可选
+  int32 id = 1;
+  uint32 abs_x = 2;
+  uint32 abs_y = 3;
+  TouchEventType event_type = 4;
 }
 
-// 工具类型枚举
-enum ToolType {
-  TOOL_UNSPECIFIED = 0;
-  TOOL_FINGER = 1;
-  TOOL_PEN = 2;
-  TOOL_MOUSE = 3;
-}
-
-// 手势类型枚举
-enum GestureType {
-  GESTURE_NONE = 0;
-  GESTURE_TAP = 1;           // 单指轻点
-  GESTURE_DOUBLE_TAP = 2;    // 双指轻点
-  GESTURE_LONG_PRESS = 3;    // 长按
-  GESTURE_SCROLL = 4;        // 双指拖曳滚动
-  GESTURE_PINCH = 5;         // 双指捏合
-  GESTURE_THREE_FINGER_SWIPE = 6; // 三指横扫
+enum TouchEventType {
+  TOUCH_EVENT_TYPE_UNSPECIFIED = 0;
+  TOUCH_EVENT_TYPE_DOWN = 1;
+  TOUCH_EVENT_TYPE_UP = 2;
+  TOUCH_EVENT_TYPE_MOVE = 3;
+  TOUCH_EVENT_TYPE_CANCEL = 4;
 }

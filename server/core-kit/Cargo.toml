@@ -21,3 +21,5 @@ touchpad-proto = { workspace = true }
 rcgen = { workspace = true }
 pem = { workspace = true }
 directories-next = { workspace = true }
+evdev = { workspace = true }
+num_enum = { workspace = true }

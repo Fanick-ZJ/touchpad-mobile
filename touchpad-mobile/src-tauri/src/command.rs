@@ -1,16 +1,13 @@
 use std::sync::Arc;
 
-use anyhow::Result;
+use anyhow::{anyhow, Result};
 use mdns_sd::ResolvedService;
 use rand::Rng;
 use shared_utils::execute_params;
 use tauri::{State, Window};
 use tokio::net::TcpStream;
 use tokio::sync::Mutex;
-use touchpad_proto::{
-    codec::ProtoStream,
-    proto::{self, v1::Exit},
-};
+use touchpad_proto::{codec::ProtoStream, proto};
 use xxhash_rust::xxh3::xxh3_64;
 
 use crate::{
@@ -18,6 +15,7 @@ use crate::{
     error::ConnectionError,
     quic::QuicClient,
     state::{DiscoverDevice, ManagedState},
+    types::{FrontTouchPoint, TouchPointStatus},
     QUIC_CLIENTS,
 };
 
@@ -270,6 +268,17 @@ pub async fn start_connection(
     }
 }
 
+async fn find_quic_client_index(device: &DiscoverDevice) -> Option<usize> {
+    if let Some(quic_clients) = QUIC_CLIENTS.get() {
+        let clients = quic_clients.lock().await;
+        clients
+            .iter()
+            .position(|c| c.remote_host().unwrap_or_default() == device.address.to_string())
+    } else {
+        None
+    }
+}
+
 #[tauri::command]
 /// 断开当前设备连接
 pub async fn disconnect_device(
@@ -280,24 +289,32 @@ pub async fn disconnect_device(
     if !connected_devices.contains(&device) {
         return Err("设备未连接".to_string());
     }
+    let device_address = device.address.to_string();
     // 执行断开连接
+    let client_index = find_quic_client_index(&device).await;
+    if let Some(client_index) = client_index {
+        let mut clients = QUIC_CLIENTS.get().unwrap().lock().await;
+        let current_client = clients.get_mut(client_index).ok_or("指定客户端不存在")?;
+        current_client.disconnect().await.map_err(|e| {
+            let s = format!("设备{}断开连接失败. {e}", device.name);
+            log::error!("{}", s);
+            s.to_string()
+        })?;
+        // 移除设备
+        connected_devices.retain(|dev| dev != &device);
+        clients.retain(|client| {
+            client.remote_host().unwrap_or_default() != device.address.to_string()
+        });
+    }
+
+    // 重新获取锁进行清理
+    let mut connected_devices = state.current_devices.lock().await;
+    connected_devices.retain(|dev| dev != &device);
+
+    // 从全局客户端列表中移除
     if let Some(quic_clients) = QUIC_CLIENTS.get() {
         let mut clients = quic_clients.lock().await;
-        if let Some(client) = clients
-            .iter_mut()
-            .find(|client| client.remote_host().unwrap_or_default() == device.address.to_string())
-        {
-            client.disconnect().await.map_err(|e| {
-                let s = format!("设备{}断开连接失败. {e}", device.name);
-                log::error!("{}", s);
-                s.to_string()
-            })?;
-            // 移除设备
-            connected_devices.retain(|dev| dev != &device);
-            clients.retain(|client| {
-                client.remote_host().unwrap_or_default() != device.address.to_string()
-            });
-        }
+        clients.retain(|client| client.remote_host().unwrap_or_default() != device_address);
     }
 
     Ok(())
@@ -314,4 +331,49 @@ pub async fn get_devices(state: State<'_, ManagedState>) -> Result<Vec<DiscoverD
 /// 获取当前语言
 pub async fn get_language() -> Result<String, String> {
     Ok(shared_utils::lang::translate::get_current_language().to_string())
+}
+
+#[tauri::command]
+pub async fn send_touch_points(
+    device: DiscoverDevice,
+    touch_points: Vec<FrontTouchPoint>,
+) -> Result<(), String> {
+    let client_index = find_quic_client_index(&device).await;
+    if let Some(client_index) = client_index {
+        let mut clients = QUIC_CLIENTS.get().unwrap().lock().await;
+        let current_client = clients.get_mut(client_index).ok_or("指定客户端不存在")?;
+        let pointers: Vec<proto::v1::Pointer> = touch_points
+            .iter()
+            .map(|p| {
+                let event_type = match p.status {
+                    TouchPointStatus::Add => proto::v1::TouchEventType::Down,
+                    TouchPointStatus::Move => proto::v1::TouchEventType::Move,
+                    TouchPointStatus::Leave => proto::v1::TouchEventType::Up,
+                };
+                proto::v1::Pointer {
+                    id: p.tracking_id,
+                    abs_x: p.x,
+                    abs_y: p.y,
+                    event_type: event_type as i32,
+                }
+            })
+            .collect();
+        let now = chrono::Utc::now().timestamp_micros();
+        if let Err(e) = current_client.increment_touch_pack_count().await {
+            return Err(format!("增加触摸包计数失败: {}", e));
+        }
+        let seq = current_client.touch_pack_count().await;
+        let touch_packet = proto::v1::TouchPacket {
+            ts_ms: now as u64,
+            seq,
+            pointers,
+            reserved: vec![],
+        };
+        if let Err(e) = current_client.send(&touch_packet).await {
+            return Err(format!("发送触摸点失败: {}", e));
+        }
+        return Ok(());
+    } else {
+        Err("未找到指定设备的客户端".to_string())
+    }
 }

@@ -11,7 +11,7 @@ message Welcome {
 
 // 连接推出信号
 message Exit {
-    uint64 ts_ms = 1;
+  uint64 ts_ms = 1;
 }
 
 message Reject {

@@ -1,0 +1,41 @@
+# 基础配置
+  edition = "2021"
+  max_width = 100
+  hard_tabs = false
+  tab_spaces = 4
+
+  # 导入排序
+  imports_granularity = "Crate"
+  group_imports = "StdExternalCrate"
+  reorder_imports = true
+
+  # 代码风格
+  use_field_init_shorthand = true
+  use_try_shorthand = false
+  format_code_in_doc_comments = true
+
+  # 注释和文档
+  wrap_comments = true
+  comment_width = 80
+  normalize_comments = true
+  normalize_doc_attributes = true
+
+  # 结构体和枚举
+  struct_lit_single_line = true
+  enum_discrim_align_threshold = 0
+
+  # 函数和方法
+  fn_params_layout = "Tall"
+  fn_call_width = 80
+
+  # 链式调用
+  chain_width = 60
+  chains_overflow_last = true
+
+  # match 表达式
+  match_block_trailing_comma = true
+
+  # 其他
+  merge_derives = true
+  remove_nested_parens = true
+  use_small_heuristics = "Default"

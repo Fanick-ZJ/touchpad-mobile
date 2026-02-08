@@ -16,6 +16,8 @@ pub fn wrap<M: Message + 'static>(msg: &M) -> Result<Vec<u8>> {
         payload: Some(
             if let Some(pb) = (msg as &dyn Any).downcast_ref::<proto::v1::Welcome>() {
                 Payload::Welcome(pb.clone())
+            } else if let Some(pb) = (msg as &dyn Any).downcast_ref::<proto::v1::RegisterDevice>() {
+                Payload::RegisterDevice(pb.clone())
             } else if let Some(pb) = (msg as &dyn Any).downcast_ref::<proto::v1::Reject>() {
                 Payload::Reject(pb.clone())
             } else if let Some(pb) = (msg as &dyn Any).downcast_ref::<proto::v1::HeartBeat>() {
