@@ -88,16 +88,16 @@ pub async fn start_discover_service(state: State<'_, ManagedState>) -> Result<()
             Err(e) => {
                 log::error!("Failed to browse for service types: {e:?}");
                 return;
-            }
+            },
         };
         while let Ok(event) = receiver.recv_async().await {
             match event {
                 mdns_sd::ServiceEvent::SearchStarted(service_type) => {
                     log::info!("start mdns discover service: {service_type}")
-                }
+                },
                 mdns_sd::ServiceEvent::ServiceFound(service_type, _full_name) => {
                     log::info!("found service: {service_type}")
-                }
+                },
                 mdns_sd::ServiceEvent::ServiceResolved(resolved_service) => {
                     let device = service_resolve_handler(resolved_service);
                     if let Some(device) = device {
@@ -107,7 +107,7 @@ pub async fn start_discover_service(state: State<'_, ManagedState>) -> Result<()
                     } else {
                         continue;
                     }
-                }
+                },
                 mdns_sd::ServiceEvent::ServiceRemoved(service_type, full_name) => {
                     let hostname = full_name
                         .split(&format!(".{service_type}"))
@@ -119,10 +119,10 @@ pub async fn start_discover_service(state: State<'_, ManagedState>) -> Result<()
                             break;
                         }
                     }
-                }
+                },
                 mdns_sd::ServiceEvent::SearchStopped(service_type) => {
                     log::info!("search stopped: {service_type}")
-                }
+                },
                 _ => todo!(),
             }
         }
@@ -200,6 +200,22 @@ async fn connect_device(
                 log::error!("QUIC 连接失败: {:?}", e);
                 return Err(ConnectionError::TouchServerConnectError(e.to_string()));
             }
+
+            // 发送 RegisterDevice 消息注册设备
+            let now = chrono::Utc::now().timestamp_millis();
+            let register_device = proto::v1::RegisterDevice {
+                device_name: tauri_plugin_os::hostname(),
+                ip: device.address.to_string(),
+                width: 1920,
+                height: 1080,
+                send_ts: now,
+            };
+            if let Err(e) = quic_client.send(&register_device).await {
+                log::error!("发送 RegisterDevice 失败: {:?}", e);
+                return Err(ConnectionError::SendError(e.to_string()));
+            }
+            log::info!("RegisterDevice 消息已发送");
+
             let mut clients = QUIC_CLIENTS
                 .get_or_init(|| Arc::new(Mutex::new(vec![])))
                 .lock()
@@ -210,13 +226,10 @@ async fn connect_device(
             emit::device_login(&device)?;
             // 更新当前设备
             connected_devices.lock().await.push(device);
-        }
+        },
         proto::v1::wrapper::Payload::Reject(reject) => {
-            return Err(ConnectionError::Rejected(format!(
-                "拒绝码: {}",
-                reject.reason
-            )));
-        }
+            return Err(ConnectionError::Rejected(format!("拒绝码: {}", reject.reason)));
+        },
         _ => return Err(ConnectionError::UnexpectedResponse),
     }
 
@@ -258,13 +271,13 @@ pub async fn start_connection(
             // 可选：发送成功事件
             let _ = emit::connect_success();
             Ok(true)
-        }
+        },
         Err(e) => {
             log::error!("设备连接失败: {}", e);
             // 关键：将错误通知前端
             let _ = emit::connect_error(&e.to_string());
             Ok(false)
-        }
+        },
     }
 }
 
@@ -358,13 +371,13 @@ pub async fn send_touch_points(
                 }
             })
             .collect();
-        let now = chrono::Utc::now().timestamp_micros();
+        let now = chrono::Utc::now().timestamp_millis();
         if let Err(e) = current_client.increment_touch_pack_count().await {
             return Err(format!("增加触摸包计数失败: {}", e));
         }
         let seq = current_client.touch_pack_count().await;
         let touch_packet = proto::v1::TouchPacket {
-            ts_ms: now as u64,
+            ts_ms: now,
             seq,
             pointers,
             reserved: vec![],

@@ -4,7 +4,7 @@ package touchpad.v1;
 // 主消息：一条网络包只含一个 TouchPacket
 message TouchPacket {
   //---- 头部（必须存在，8 byte 以内） ----//
-  uint64 ts_ms = 1; // 手机开机毫秒，用于乱序重排 & 延迟计算
+  int64 ts_ms = 1; // 手机开机毫秒，用于乱序重排 & 延迟计算
   uint32 seq = 2; // 自增序列号，方便丢包统计
 
   //---- 业务数据 ----//

@@ -6,4 +6,5 @@ message RegisterDevice {
   string ip = 2;
   uint32 width = 3;
   uint32 height = 4;
+  int64 send_ts = 5; // 客户端发送时间戳（毫秒），用于时钟同步
 }

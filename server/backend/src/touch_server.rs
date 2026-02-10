@@ -4,17 +4,18 @@ use std::{
     net::{IpAddr, SocketAddr},
     str::FromStr,
     sync::Arc,
+    time::Duration,
 };
 
 use anyhow::Result;
 
 use quinn::{
-    Connection, Endpoint, ServerConfig,
+    Connection, Endpoint, IdleTimeout, ServerConfig, VarInt,
     rustls::pki_types::{CertificateDer, PrivatePkcs8KeyDer},
 };
 use tokio::sync::{
     Mutex, RwLock,
-    mpsc::{self, Receiver},
+    mpsc::{self},
     watch,
 };
 use touchpad_proto::{
@@ -28,6 +29,8 @@ use server_core_kit::{
     driver::{Driver, TouchPoint, TouchStatus},
 };
 
+use crate::latency::{LatencyDisplay, RealtimeLatencyTracker};
+
 /// 创建服务段的配置
 pub fn configure_server(
     cert_der: CertificateDer<'static>,
@@ -37,6 +40,9 @@ pub fn configure_server(
     let transport_config = Arc::get_mut(&mut server_config.transport).unwrap();
     // 最大双工通讯连接数量
     transport_config.max_concurrent_bidi_streams(100_u8.into());
+    transport_config
+        .max_idle_timeout(Some(IdleTimeout::from(VarInt::from_u32(1000 * 60 * 60 * 24))));
+    transport_config.keep_alive_interval(Some(Duration::from_secs(25)));
 
     Ok(server_config)
 }
@@ -64,6 +70,10 @@ pub struct TouchServer {
     connected_device: Arc<Mutex<HashMap<IpAddr, Device>>>,
     touch_driver: Arc<std::sync::Mutex<Driver>>,
     touch_event_tx: mpsc::UnboundedSender<TouchPoint>,
+    /// 延迟跟踪器
+    latency_tracker: Arc<std::sync::Mutex<RealtimeLatencyTracker>>,
+    /// 延迟数据发送器（用于前端显示）
+    latency_tx: mpsc::UnboundedSender<LatencyDisplay>,
 }
 
 struct ConnectionInfo {
@@ -82,11 +92,30 @@ impl TouchServer {
         info!("listening on {}", endpoint.local_addr()?);
         let (touch_event_tx, touch_event_rx) = mpsc::unbounded_channel();
         let touch_driver = Arc::new(std::sync::Mutex::new(Driver::new(1920, 1080)?));
+        let (latency_tx, mut latency_rx) = mpsc::unbounded_channel::<LatencyDisplay>();
 
         // 启动触控事件处理任务
         let driver_clone = Arc::clone(&touch_driver);
         tokio::spawn(async move {
             Self::touch_event_processor(driver_clone, touch_event_rx).await;
+        });
+
+        // 启动延迟数据广播任务
+        tokio::spawn(async move {
+            while let Some(latency_data) = latency_rx.recv().await {
+                // 这里可以通过 Tauri 事件发送到前端
+                // 暂时只记录日志
+                if latency_data.total_packets % 100 == 0 {
+                    info!(
+                        "📊 延迟统计: {:.2}ms (平均: {:.2}ms, 最小: {:.2}ms, 最大: {:.2}ms, 丢包率: {:.2}%)",
+                        latency_data.current_ms,
+                        latency_data.avg_ms,
+                        latency_data.min_ms,
+                        latency_data.max_ms,
+                        latency_data.packet_loss_percent
+                    );
+                }
+            }
         });
 
         let touch_server = Self {
@@ -98,6 +127,8 @@ impl TouchServer {
             connected_device: device_map,
             touch_driver,
             touch_event_tx,
+            latency_tracker: Arc::new(std::sync::Mutex::new(RealtimeLatencyTracker::new(100))),
+            latency_tx,
         };
         Ok(touch_server)
     }
@@ -191,12 +222,16 @@ impl TouchServer {
                                     let conn_clone = conn.clone();
                                     let conn_ip = conn.remote_address().ip();
                                     let touch_event_tx = self.touch_event_tx.clone();
+                                    let latency_tracker = Arc::clone(&self.latency_tracker);
+                                    let latency_tx = self.latency_tx.clone();
                                     let task_handle = tokio::spawn(async move {
                                         let mut conn_client = ConnectedExector::new(
                                             conn_clone,
                                             Arc::clone(&connected_device),
                                             shutdown_subscribe,
-                                            touch_event_tx
+                                            touch_event_tx,
+                                            latency_tracker,
+                                            latency_tx,
                                         );
                                         if let Err(err) = conn_client.start().await {
                                             error!("Failed to client running: {}", err);
@@ -243,6 +278,36 @@ impl TouchServer {
             let _ = tx.send(ShutdownSignal::ServerStop);
         }
     }
+
+    /// 获取当前延迟统计数据
+    pub fn get_latency_stats(&self) -> LatencyDisplay {
+        if let Ok(tracker) = self.latency_tracker.lock() {
+            tracker.get_current_stats().to_display()
+        } else {
+            LatencyDisplay {
+                current_ms: 0.0,
+                avg_ms: 0.0,
+                min_ms: 0.0,
+                max_ms: 0.0,
+                packet_loss_percent: 0.0,
+                total_packets: 0,
+            }
+        }
+    }
+
+    /// 重置延迟统计数据
+    pub fn reset_latency_stats(&self) {
+        if let Ok(mut tracker) = self.latency_tracker.lock() {
+            tracker.reset();
+        }
+    }
+
+    /// 设置时钟偏移（用于同步手机和服务器时间）
+    pub fn set_clock_offset(&self, offset_ms: i64) {
+        if let Ok(mut tracker) = self.latency_tracker.lock() {
+            tracker.set_clock_offset(offset_ms);
+        }
+    }
 }
 
 struct ConnectedExector {
@@ -252,6 +317,10 @@ struct ConnectedExector {
     touch_event_tx: mpsc::UnboundedSender<TouchPoint>,
     /// 停止信号
     stop_signal: watch::Receiver<ShutdownSignal>,
+    /// 延迟跟踪器
+    latency_tracker: Arc<std::sync::Mutex<RealtimeLatencyTracker>>,
+    /// 延迟数据发送器
+    latency_tx: mpsc::UnboundedSender<LatencyDisplay>,
 }
 
 impl ConnectedExector {
@@ -260,6 +329,8 @@ impl ConnectedExector {
         connected_device: Arc<Mutex<HashMap<IpAddr, Device>>>,
         stop_signal: watch::Receiver<ShutdownSignal>,
         touch_event_tx: mpsc::UnboundedSender<TouchPoint>,
+        latency_tracker: Arc<std::sync::Mutex<RealtimeLatencyTracker>>,
+        latency_tx: mpsc::UnboundedSender<LatencyDisplay>,
     ) -> Self {
         ConnectedExector {
             conn,
@@ -267,6 +338,8 @@ impl ConnectedExector {
             connected_device,
             stop_signal,
             touch_event_tx,
+            latency_tracker,
+            latency_tx,
         }
     }
 
@@ -324,6 +397,9 @@ impl ConnectedExector {
     async fn handle_message(&self, message: Payload) -> Result<bool> {
         match message {
             Payload::RegisterDevice(device) => {
+                // 保存客户端发送时间戳用于时钟同步
+                let client_send_ts = device.send_ts;
+
                 let device = Device {
                     name: device.device_name,
                     ip: IpAddr::from_str(&device.ip)?,
@@ -332,11 +408,32 @@ impl ConnectedExector {
                 };
                 self.connected_device.lock().await.insert(device.ip, device);
 
+                // 计算时钟偏移并设置
+                let server_recv_ts_ms = (self.get_timestamp_us() / 1000) as i64;
+                let clock_offset_ms = client_send_ts - server_recv_ts_ms;
+                if let Ok(mut tracker) = self.latency_tracker.lock() {
+                    tracker.set_clock_offset(clock_offset_ms);
+                    info!(
+                        "⏱️  时钟同步完成: 偏移量 = {}ms (客户端时间: {}ms, 服务器时间: {}ms)",
+                        clock_offset_ms, client_send_ts, server_recv_ts_ms
+                    );
+                }
+
                 Ok(true)
             },
             Payload::TouchPacket(touch_packet) => {
-                debug!("接受触控事件: {:?}", touch_packet);
-                // 通过 channel 发送触控事件，不阻塞网络 I/O
+                // 记录延迟
+                let server_ts_us = self.get_timestamp_us();
+                if let Ok(mut tracker) = self.latency_tracker.lock() {
+                    if let Some(latency_data) =
+                        tracker.record_packet(touch_packet.seq, touch_packet.ts_ms, server_ts_us)
+                    {
+                        // 发送延迟数据到前端
+                        debug!("Latency data: {:?}", latency_data);
+                        let _ = self.latency_tx.send(latency_data.to_display());
+                    }
+                }
+
                 for pointer in touch_packet.pointers {
                     let tracking_id = if pointer.event_type != TouchEventType::Up as i32 {
                         pointer.id
@@ -365,12 +462,21 @@ impl ConnectedExector {
                 }
                 Ok(true)
             },
-            Payload::Exit(exit) => {
+            Payload::Exit(_exit) => {
                 info!("Exiting connection: {:?}", self.conn.remote_address());
                 self.conn.close((0 as u8).into(), b"");
                 Ok(false)
             },
             _ => Ok(true),
         }
+    }
+
+    /// 获取当前时间戳（微秒）
+    fn get_timestamp_us(&self) -> u64 {
+        use std::time::{SystemTime, UNIX_EPOCH};
+        SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap()
+            .as_micros() as u64
     }
 }

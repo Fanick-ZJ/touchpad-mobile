@@ -6,7 +6,7 @@ use evdev::{
     RelativeAxisCode, SynchronizationCode, UinputAbsSetup, uinput::VirtualDevice,
 };
 use num_enum::TryFromPrimitive;
-use tracing::info;
+use tracing::{debug, info};
 
 #[derive(Debug, Clone, Copy, TryFromPrimitive)]
 #[repr(u8)]
@@ -128,7 +128,7 @@ impl Driver {
         for point in touche_points {
             events.extend(match point.status {
                 TouchStatus::Down => {
-                    info!("Touch down: {:?}", point);
+                    debug!("Touch down: {:?}", point);
                     self.touched_slots.insert(point.slot);
                     self.emit_point_down(point)
                 },

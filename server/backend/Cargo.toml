@@ -11,6 +11,7 @@ anyhow = { workspace = true }
 tracing = { workspace = true }
 xxhash-rust = { workspace = true, features = ["xxh3"] }
 chrono = { workspace = true }
+serde = { workspace = true, features = ["derive"] }
 # workspace crate
 server-utils = { workspace = true }
 server-core-kit = { workspace = true }
