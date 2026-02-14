@@ -9,6 +9,7 @@ const startDiscoverService = async () => {
 const startConnection = async (device: Device): Promise<Boolean> => {
   return await invoke("start_connection", { device });
 };
+startConnection;
 
 const disconnectDevice = async (device: Device): Promise<Boolean> => {
   return await invoke("disconnect_device", { device });

@@ -118,7 +118,6 @@ impl QuicClient {
             self.send(&Exit { ts_ms: now }).await?;
             // 2. 等待一小段时间，确保消息发送完成
             tokio::time::sleep(tokio::time::Duration::from_millis(100)).await;
-
             endpoint.close((0 as u8).into(), b"Goodbye");
 
             self.remote_addr.take();

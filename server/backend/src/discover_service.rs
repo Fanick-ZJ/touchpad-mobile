@@ -1,5 +1,4 @@
 use anyhow::{Result, anyhow};
-use base64::{Engine, engine::general_purpose};
 use mdns_sd::{ServiceDaemon, ServiceInfo};
 use server_core_kit::device::Device;
 use server_utils::sys::get_computer_name;
@@ -7,6 +6,7 @@ use shared_utils::execute_params;
 use std::{
     collections::HashMap,
     net::{IpAddr, SocketAddr},
+    process::Command,
     sync::Arc,
     time::Duration,
 };
@@ -41,6 +41,8 @@ pub struct DiscoverService {
     stop_signal: Arc<Mutex<Option<oneshot::Sender<()>>>>,
     /// 守护进程
     mdns_daemon: Arc<Mutex<Option<ServiceDaemon>>>,
+    /// 发现服务处理句柄
+    discover_handler: Arc<Mutex<Option<tokio::task::JoinHandle<()>>>>,
     /// 发现设后后的回调函数
     discover_callback: Option<Box<dyn Fn(&Device, Vec<&Device>) + Send + Sync>>,
     /// 登录验证成功后的公钥
@@ -73,6 +75,7 @@ impl<'d> DiscoverService {
             listening_device: Arc::new(Mutex::new(HashMap::new())),
             stop_signal: Arc::new(Mutex::new(None)),
             mdns_daemon: Arc::new(Mutex::new(None)),
+            discover_handler: Arc::new(Mutex::new(None)),
             discover_callback,
             login_public_key,
         }
@@ -89,10 +92,7 @@ impl<'d> DiscoverService {
         let seed_checksum = xxh3_64(self.checksum_seed.as_bytes());
 
         info!("服务端计算的校验核: {}", seed_checksum);
-        info!(
-            "接受到的校验核: {}, 目标校验核:{}",
-            dv.checksum, seed_checksum
-        );
+        info!("接受到的校验核: {}, 目标校验核:{}", dv.checksum, seed_checksum);
         if dv.checksum == seed_checksum {
             let listening_device = self.listening_device.lock().await;
             if listening_device.contains_key(&addr.ip()) {
@@ -141,7 +141,7 @@ impl<'d> DiscoverService {
             Err(e) => {
                 error!("读取消息失败 {}: {}", addr, e);
                 return Err(e);
-            }
+            },
         };
         match payload {
             Payload::DiscoverValidation(dv) => {
@@ -158,11 +158,11 @@ impl<'d> DiscoverService {
                     info!("🚫 已向客户端发送拒绝消息");
                     return Err(anyhow!("Failed to handle client connection"));
                 }
-            }
+            },
             _ => {
                 warn!("收到未知消息类型");
                 return Err(anyhow!("Received unknown payload"));
-            }
+            },
         }
     }
 
@@ -204,7 +204,7 @@ impl<'d> DiscoverService {
         Ok(())
     }
 
-    pub async fn stop(&self) -> Result<()> {
+    pub async fn close(&self) -> Result<()> {
         // 1. 先发送停止信号，减少锁作用域
         if let Some(stop_signal) = self.stop_signal.lock().await.take() {
             if let Err(_) = stop_signal.send(()) {
@@ -225,17 +225,17 @@ impl<'d> DiscoverService {
                     Ok(_) => {
                         info!("MDNS守护进程已成功停止");
                         break;
-                    }
+                    },
                     Err(mdns_sd::Error::Again) if retries < MAX_RETRIES => {
                         retries += 1;
                         warn!("MDNS守护进程繁忙，重试停止 ({}/{})", retries, MAX_RETRIES);
                         tokio::time::sleep(Duration::from_millis(100)).await;
                         // continue 循环重试
-                    }
+                    },
                     Err(e) => {
                         error!("MDNS守护进程停止失败：{}", e);
                         return Err(e.into()); // 转换为通用Error
-                    }
+                    },
                 }
             }
         } else {
@@ -272,11 +272,12 @@ impl<'d> DiscoverService {
             .expect("Failed to register our service");
         self.mdns_daemon.lock().await.replace(mdns_daemon);
         let service_clone = self.clone();
-        tokio::spawn(async move {
+        let handler = tokio::spawn(async move {
             if let Err(e) = service_clone.start_confirm_server().await {
                 error!("启动确认服务器失败: {:?}", e);
             }
         });
+        self.discover_handler.lock().await.replace(handler);
         Ok(())
     }
 

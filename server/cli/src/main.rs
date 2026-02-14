@@ -25,6 +25,36 @@ struct Cli {
     config_file: std::path::PathBuf,
 }
 
+#[cfg(target_os = "linux")]
+fn ping_host(host: &str) -> bool {
+    use std::process::Command;
+
+    let output = Command::new("ping")
+        .arg("-c") // Linux/Mac用-c，Windows用-n
+        .arg("1")
+        .arg(host)
+        .output();
+
+    match output {
+        Ok(out) => out.status.success(),
+        Err(_) => false,
+    }
+}
+
+#[cfg(target_os = "windows")]
+fn ping_host(host: &str) -> bool {
+    let output = Command::new("ping")
+        .arg("-n") // Linux/Mac用-c，Windows用-n
+        .arg("1")
+        .arg(host)
+        .output();
+
+    match output {
+        Ok(out) => out.status.success(),
+        Err(_) => false,
+    }
+}
+
 #[tokio::main]
 async fn main() -> Result<()> {
     let _guard = init_tracing();
@@ -37,10 +67,13 @@ async fn main() -> Result<()> {
     let check_seed = execute_params::hash_seed();
 
     // 获取指定的ip地址
-    let discover_service_ip = if config.ip.is_some() {
-        let addr = config.ip.as_ref().unwrap();
-        let ipv4 = addr.parse::<Ipv4Addr>();
-        let ipv6 = addr.parse::<Ipv6Addr>();
+    let discover_service_ip = if let Some(ip) = config.ip {
+        if !ping_host(&ip) {
+            error!("The discover service address is invalid");
+            return Err(anyhow!("Invalid discover service address"));
+        }
+        let ipv4 = ip.parse::<Ipv4Addr>();
+        let ipv6 = ip.parse::<Ipv6Addr>();
         if ipv4.is_ok() {
             IpAddr::V4(ipv4.unwrap())
         } else if ipv6.is_ok() {
@@ -88,13 +121,13 @@ async fn main() -> Result<()> {
     discover_service.discover().await?;
     let backend_config = TouchServerConfig {
         server_port: config.backend_port,
-        cert_der: cert_der,
-        key_der: key_der,
+        cert_der,
+        key_der,
     };
     let listening_device = discover_service.listening_derive();
     let touch_service = Arc::new(TouchServer::new(&backend_config, listening_device).await?);
     touch_service.start().await?;
     tokio::signal::ctrl_c().await?;
-    touch_service.close().await;
+    discover_service.close().await?;
     Ok(())
 }

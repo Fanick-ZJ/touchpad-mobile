@@ -3,10 +3,11 @@ use std::{collections::HashSet, vec};
 use anyhow::Result;
 use evdev::{
     AbsInfo, AbsoluteAxisCode, AttributeSet, EventType, InputEvent, KeyCode, MiscCode, PropType,
-    RelativeAxisCode, SynchronizationCode, UinputAbsSetup, uinput::VirtualDevice,
+    RelativeAxisCode, SynchronizationCode, UinputAbsSetup,
+    uinput::{VirtualDevice, VirtualDeviceBuilder},
 };
 use num_enum::TryFromPrimitive;
-use tracing::{debug, info};
+use tracing::{debug, error, info};
 
 #[derive(Debug, Clone, Copy, TryFromPrimitive)]
 #[repr(u8)]

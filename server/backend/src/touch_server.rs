@@ -54,26 +54,53 @@ pub struct TouchServerConfig {
 }
 
 #[derive(Clone, Debug, PartialEq)]
+enum ProcesserType {
+    Touch,
+    Latency,
+    Connection,
+}
+
+#[derive(Clone, Debug, PartialEq)]
 enum ShutdownSignal {
     Empty,
-    ServerStop,
+    ProcesserStop(ProcesserType),
     ConnectionClose(usize),
+}
+
+struct TouchServerChannel {
+    /// 关闭通道 (watch::Receiver 可以 clone，不需要 Mutex)
+    shutdown_tx: watch::Sender<ShutdownSignal>,
+    shutdown_rx: Arc<Mutex<watch::Receiver<ShutdownSignal>>>,
+    /// 触摸事件
+    touch_event_tx: mpsc::UnboundedSender<TouchPoint>,
+    touch_event_rx: Arc<Mutex<mpsc::UnboundedReceiver<TouchPoint>>>,
+    /// 延迟计算
+    latency_tx: Option<mpsc::UnboundedSender<LatencyDisplay>>,
+    latency_rx: Option<Arc<Mutex<mpsc::UnboundedReceiver<LatencyDisplay>>>>,
+}
+
+/// 所有通讯服务处理句柄的集合
+struct ServiceHandlers {
+    /// 总体服务间通讯通道
+    server_handler: RwLock<Option<tokio::task::JoinHandle<()>>>,
+    /// 触摸事件服务
+    touch_handler: RwLock<Option<tokio::task::JoinHandle<()>>>,
+    /// 延迟计算服务
+    latency_handler: RwLock<Option<tokio::task::JoinHandle<()>>>,
 }
 
 pub struct TouchServer {
     // 一个端点都对应一个UDP套接字
     pub endpoint: Endpoint,
     pub addr: SocketAddr,
-    shutdown_tx: Mutex<Option<watch::Sender<ShutdownSignal>>>,
     connections: Arc<RwLock<HashMap<u64, ConnectionInfo>>>,
-    server_handle: RwLock<Option<tokio::task::JoinHandle<()>>>,
     connected_device: Arc<Mutex<HashMap<IpAddr, Device>>>,
     touch_driver: Arc<std::sync::Mutex<Driver>>,
-    touch_event_tx: mpsc::UnboundedSender<TouchPoint>,
     /// 延迟跟踪器
     latency_tracker: Arc<std::sync::Mutex<RealtimeLatencyTracker>>,
-    /// 延迟数据发送器（用于前端显示）
-    latency_tx: mpsc::UnboundedSender<LatencyDisplay>,
+    /// 服务间通讯通道
+    server_channel: TouchServerChannel,
+    service_handlers: ServiceHandlers,
 }
 
 struct ConnectionInfo {
@@ -90,84 +117,94 @@ impl TouchServer {
         let ip_addr = SocketAddr::new(server_core_kit::inner_const::ANY_V4, config.server_port);
         let endpoint = Endpoint::server(server_config, ip_addr)?;
         info!("listening on {}", endpoint.local_addr()?);
+        let touch_driver = match Driver::new(1920, 1080) {
+            Ok(driver) => Arc::new(std::sync::Mutex::new(driver)),
+            Err(err) => {
+                error!("Failed to initialize touch driver: {}", err);
+                return Err(err.into());
+            },
+        };
+
         let (touch_event_tx, touch_event_rx) = mpsc::unbounded_channel();
-        let touch_driver = Arc::new(std::sync::Mutex::new(Driver::new(1920, 1080)?));
-        let (latency_tx, mut latency_rx) = mpsc::unbounded_channel::<LatencyDisplay>();
+        let (latency_tx, latency_rx) = mpsc::unbounded_channel();
+        let (shutdown_tx, shutdown_rx) = watch::channel(ShutdownSignal::Empty);
 
-        // 启动触控事件处理任务
-        let driver_clone = Arc::clone(&touch_driver);
-        tokio::spawn(async move {
-            Self::touch_event_processor(driver_clone, touch_event_rx).await;
-        });
+        let server_channel = TouchServerChannel {
+            touch_event_tx,
+            touch_event_rx: Arc::new(Mutex::new(touch_event_rx)),
+            shutdown_tx,
+            shutdown_rx: Arc::new(Mutex::new(shutdown_rx)),
+            latency_tx: Some(latency_tx),
+            latency_rx: Some(Arc::new(Mutex::new(latency_rx))),
+        };
 
-        // 启动延迟数据广播任务
-        tokio::spawn(async move {
-            while let Some(latency_data) = latency_rx.recv().await {
-                // 这里可以通过 Tauri 事件发送到前端
-                // 暂时只记录日志
-                if latency_data.total_packets % 100 == 0 {
-                    info!(
-                        "📊 延迟统计: {:.2}ms (平均: {:.2}ms, 最小: {:.2}ms, 最大: {:.2}ms, 丢包率: {:.2}%)",
-                        latency_data.current_ms,
-                        latency_data.avg_ms,
-                        latency_data.min_ms,
-                        latency_data.max_ms,
-                        latency_data.packet_loss_percent
-                    );
-                }
-            }
-        });
+        let service_handlers = ServiceHandlers {
+            server_handler: RwLock::new(None),
+            touch_handler: RwLock::new(None),
+            latency_handler: RwLock::new(None),
+        };
 
         let touch_server = Self {
             endpoint,
             addr: ip_addr,
-            shutdown_tx: Mutex::new(None),
             connections: Arc::new(RwLock::new(HashMap::new())),
-            server_handle: RwLock::new(None),
             connected_device: device_map,
             touch_driver,
-            touch_event_tx,
             latency_tracker: Arc::new(std::sync::Mutex::new(RealtimeLatencyTracker::new(100))),
-            latency_tx,
+            server_channel,
+            service_handlers,
         };
         Ok(touch_server)
     }
 
     /// 触控事件处理器 - 专门的任务处理触控事件，不阻塞网络 I/O
-    async fn touch_event_processor(
-        driver: Arc<std::sync::Mutex<Driver>>,
-        mut event_rx: mpsc::UnboundedReceiver<TouchPoint>,
-    ) {
-        // 批量处理缓冲区
+    async fn touch_event_processor(self: &Arc<Self>) {
+        // Clone watch::Receiver（可以 clone，不需要 Mutex）
+        let mut shutdown_rx = self.server_channel.shutdown_tx.subscribe();
+
+        // 对于 mpsc::Receiver，我们使用 Mutex 但在分支内部获取锁
         let mut buffer = Vec::with_capacity(64);
-
         loop {
-            buffer.clear();
+            tokio::select! {
+                _ = shutdown_rx.changed() => {
+                    let value = shutdown_rx.borrow().clone();
+                    if value == ShutdownSignal::ProcesserStop(ProcesserType::Touch) {
+                        break;
+                    }
+                },
+                event = async {
+                    let mut rx = self.server_channel.touch_event_rx.lock().await;
+                    rx.recv().await
+                } => {
+                    let event = match event {
+                        Some(event) => event,
+                        None => break, // channel 关闭
+                    };
 
-            // 批量接收事件（最多 64 个或等待 1ms）
-            let first = match event_rx.recv().await {
-                Some(event) => event,
-                None => break, // channel 关闭
-            };
-            buffer.push(first);
+                    buffer.push(event);
+                    // 收集更多事件（非阻塞）- 尝试获取锁，如果失败就跳过
+                    for _ in 0..63 {
+                        match self.server_channel.touch_event_rx.try_lock() {
+                            Ok(mut rx) => match rx.try_recv() {
+                                Ok(event) => buffer.push(event),
+                                Err(_) => break,
+                            },
+                            Err(_) => break,
+                        }
+                    }
 
-            // 收集更多事件（非阻塞）
-            for _ in 0..63 {
-                match event_rx.try_recv() {
-                    Ok(event) => buffer.push(event),
-                    Err(_) => break,
-                }
-            }
-
-            // 批量处理 - 使用 std::sync::Mutex，快速且不跨 await
-            if let Ok(mut driver) = driver.lock() {
-                for point in &buffer {
-                    debug!("Emitting touch event: {:?}", point);
-                    if let Err(e) = driver.emit_multitouch(std::slice::from_ref(point)) {
-                        error!("Failed to emit touch event: {}", e);
+                    // 批量处理 - 使用 std::sync::Mutex，快速且不跨 await
+                    if let Ok(mut driver) = self.touch_driver.lock() {
+                        for point in &buffer {
+                            debug!("Emitting touch event: {:?}", point);
+                            if let Err(e) = driver.emit_multitouch(std::slice::from_ref(point)) {
+                                error!("Failed to emit touch event: {}", e);
+                            }
+                        }
                     }
                 }
             }
+            buffer.clear();
         }
     }
 
@@ -178,17 +215,15 @@ impl TouchServer {
         Ok(server_config)
     }
 
-    pub async fn wait_connect(self: &Arc<Self>) -> Result<()> {
+    pub async fn connection_handler(self: &Arc<Self>) -> Result<()> {
         info!("Waiting for connection...");
-        let (shutdown_tx, mut shutdown_rx) = watch::channel(ShutdownSignal::Empty);
-        self.shutdown_tx.lock().await.replace(shutdown_tx.clone());
         loop {
-            let shutdown_subscribe = shutdown_tx.subscribe();
+            let mut shutdown_subscribe = self.server_channel.shutdown_tx.subscribe();
             // 同时监听 shutdown 信号和新的双向流
             tokio::select! {
-                _ = shutdown_rx.changed() => {
-                    let value = shutdown_rx.borrow().clone();
-                    if value == ShutdownSignal::ServerStop {
+                _ = shutdown_subscribe.changed() => {
+                    let value = shutdown_subscribe.borrow().clone();
+                    if value == ShutdownSignal::ProcesserStop(ProcesserType::Connection) {
                         info!("Shutdown signal received");
                         // 关闭所有连接
                         let connections = self.connections.clone();
@@ -221,16 +256,16 @@ impl TouchServer {
                                     info!("New connection: {}", conn_id);
                                     let conn_clone = conn.clone();
                                     let conn_ip = conn.remote_address().ip();
-                                    let touch_event_tx = self.touch_event_tx.clone();
+                                    let touch_event_tx = self.server_channel.touch_event_tx.clone();
                                     let latency_tracker = Arc::clone(&self.latency_tracker);
-                                    let latency_tx = self.latency_tx.clone();
+                                    let latency_tx = self.server_channel.latency_tx.clone();
                                     let task_handle = tokio::spawn(async move {
                                         let mut conn_client = ConnectedExector::new(
                                             conn_clone,
                                             Arc::clone(&connected_device),
-                                            shutdown_subscribe,
+                                            shutdown_subscribe.clone(),
                                             touch_event_tx,
-                                            latency_tracker,
+                                            Some(latency_tracker),
                                             latency_tx,
                                         );
                                         if let Err(err) = conn_client.start().await {
@@ -238,6 +273,7 @@ impl TouchServer {
                                         }
                                         connection_map.write().await.remove(&conn_id);
                                         connected_device.lock().await.remove(&conn_ip);
+                                        info!("Connection {} closed", conn_ip);
                                     });
 
                                     // 保存句柄
@@ -260,23 +296,93 @@ impl TouchServer {
         Ok(())
     }
 
+    /// 延迟数据广播处理器
+    async fn latency_handler(self: &Arc<Self>) {
+        // Clone watch::Receiver（可以 clone，不需要 Mutex）
+        let mut shutdown_rx = self.server_channel.shutdown_tx.subscribe();
+
+        loop {
+            tokio::select! {
+                _ = shutdown_rx.changed() => {
+                    let value = shutdown_rx.borrow().clone();
+                    if value == ShutdownSignal::ProcesserStop(ProcesserType::Latency) {
+                        break;
+                    }
+                },
+                Some(latency_data) = async {
+                    let rx_opt = self.server_channel.latency_rx.as_ref();
+                    match rx_opt {
+                        Some(rx) => {
+                            let mut locked_rx = rx.lock().await;
+                            locked_rx.recv().await
+                        },
+                        None => std::future::pending().await
+                    }
+                } => {
+                    // 这里可以通过 Tauri 事件发送到前端
+                    // 暂时只记录日志
+                    if latency_data.total_packets % 100 == 0 {
+                        info!(
+                            "📊 延迟统计: {:.2}ms (平均: {:.2}ms, 最小: {:.2}ms, 最大: {:.2}ms, 丢包率: {:.2}%)",
+                            latency_data.current_ms,
+                            latency_data.avg_ms,
+                            latency_data.min_ms,
+                            latency_data.max_ms,
+                            latency_data.packet_loss_percent
+                        );
+                    }
+                }
+            }
+        }
+    }
+
     pub async fn start(self: &Arc<Self>) -> Result<()> {
         info!("Starting server loop");
+
+        // 启动连接处理任务
         let this = self.clone();
-        let handle = tokio::spawn(async move {
-            if let Err(e) = this.wait_connect().await {
+        let server_handle = tokio::spawn(async move {
+            if let Err(e) = this.connection_handler().await {
                 error!("Failed to accept connection: {}", e);
             }
         });
-        *self.server_handle.write().await = Some(handle);
+
+        // 启动触控事件处理任务
+        let this = self.clone();
+        let touch_handler = tokio::spawn(async move {
+            this.touch_event_processor().await;
+        });
+
+        // 启动延迟数据广播任务
+        let this = self.clone();
+        let latency_handler_task = tokio::spawn(async move {
+            this.latency_handler().await;
+        });
+
+        self.service_handlers
+            .server_handler
+            .write()
+            .await
+            .replace(server_handle);
+        self.service_handlers
+            .touch_handler
+            .write()
+            .await
+            .replace(touch_handler);
+        self.service_handlers
+            .latency_handler
+            .write()
+            .await
+            .replace(latency_handler_task);
 
         Ok(())
     }
 
     pub async fn close(self: &Arc<Self>) {
-        if let Some(tx) = self.shutdown_tx.lock().await.take() {
-            let _ = tx.send(ShutdownSignal::ServerStop);
-        }
+        let shutdown_tx = &self.server_channel.shutdown_tx;
+        let _ = shutdown_tx.send(ShutdownSignal::ProcesserStop(ProcesserType::Connection));
+        let _ = shutdown_tx.send(ShutdownSignal::ProcesserStop(ProcesserType::Touch));
+        let _ = shutdown_tx.send(ShutdownSignal::ProcesserStop(ProcesserType::Latency));
     }
 
     /// 获取当前延迟统计数据
@@ -318,9 +424,9 @@ struct ConnectedExector {
     /// 停止信号
     stop_signal: watch::Receiver<ShutdownSignal>,
     /// 延迟跟踪器
-    latency_tracker: Arc<std::sync::Mutex<RealtimeLatencyTracker>>,
+    latency_tracker: Option<Arc<std::sync::Mutex<RealtimeLatencyTracker>>>,
     /// 延迟数据发送器
-    latency_tx: mpsc::UnboundedSender<LatencyDisplay>,
+    latency_tx: Option<mpsc::UnboundedSender<LatencyDisplay>>,
 }
 
 impl ConnectedExector {
@@ -329,8 +435,8 @@ impl ConnectedExector {
         connected_device: Arc<Mutex<HashMap<IpAddr, Device>>>,
         stop_signal: watch::Receiver<ShutdownSignal>,
         touch_event_tx: mpsc::UnboundedSender<TouchPoint>,
-        latency_tracker: Arc<std::sync::Mutex<RealtimeLatencyTracker>>,
-        latency_tx: mpsc::UnboundedSender<LatencyDisplay>,
+        latency_tracker: Option<Arc<std::sync::Mutex<RealtimeLatencyTracker>>>,
+        latency_tx: Option<mpsc::UnboundedSender<LatencyDisplay>>,
     ) -> Self {
         ConnectedExector {
             conn,
@@ -409,28 +515,36 @@ impl ConnectedExector {
                 self.connected_device.lock().await.insert(device.ip, device);
 
                 // 计算时钟偏移并设置
-                let server_recv_ts_ms = (self.get_timestamp_us() / 1000) as i64;
-                let clock_offset_ms = client_send_ts - server_recv_ts_ms;
-                if let Ok(mut tracker) = self.latency_tracker.lock() {
-                    tracker.set_clock_offset(clock_offset_ms);
-                    info!(
-                        "⏱️  时钟同步完成: 偏移量 = {}ms (客户端时间: {}ms, 服务器时间: {}ms)",
-                        clock_offset_ms, client_send_ts, server_recv_ts_ms
-                    );
+                if let (Some(tracker), Some(latency_tx)) = (&self.latency_tracker, &self.latency_tx)
+                {
+                    let server_recv_ts_ms = (self.get_timestamp_us() / 1000) as i64;
+                    let clock_offset_ms = client_send_ts - server_recv_ts_ms;
+                    if let Ok(mut tracker) = tracker.lock() {
+                        tracker.set_clock_offset(clock_offset_ms);
+                        info!(
+                            "⏱️  时钟同步完成: 偏移量 = {}ms (客户端时间: {}ms, 服务器时间: {}ms)",
+                            clock_offset_ms, client_send_ts, server_recv_ts_ms
+                        );
+                    }
                 }
 
                 Ok(true)
             },
             Payload::TouchPacket(touch_packet) => {
                 // 记录延迟
-                let server_ts_us = self.get_timestamp_us();
-                if let Ok(mut tracker) = self.latency_tracker.lock() {
-                    if let Some(latency_data) =
-                        tracker.record_packet(touch_packet.seq, touch_packet.ts_ms, server_ts_us)
-                    {
-                        // 发送延迟数据到前端
-                        debug!("Latency data: {:?}", latency_data);
-                        let _ = self.latency_tx.send(latency_data.to_display());
+                if let (Some(tracker), Some(latency_tx)) = (&self.latency_tracker, &self.latency_tx)
+                {
+                    let server_ts_us = self.get_timestamp_us();
+                    if let Ok(mut tracker) = tracker.lock() {
+                        if let Some(latency_data) = tracker.record_packet(
+                            touch_packet.seq,
+                            touch_packet.ts_ms,
+                            server_ts_us,
+                        ) {
+                            // 发送延迟数据到前端
+                            debug!("Latency data: {:?}", latency_data);
+                            let _ = latency_tx.send(latency_data.to_display());
+                        }
                     }
                 }
 

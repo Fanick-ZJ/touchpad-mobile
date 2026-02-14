@@ -1,6 +1,7 @@
 use std::sync::Arc;
 
 use anyhow::{anyhow, Result};
+use log::info;
 use mdns_sd::ResolvedService;
 use rand::Rng;
 use shared_utils::execute_params;
@@ -93,16 +94,16 @@ pub async fn start_discover_service(state: State<'_, ManagedState>) -> Result<()
         while let Ok(event) = receiver.recv_async().await {
             match event {
                 mdns_sd::ServiceEvent::SearchStarted(service_type) => {
-                    log::info!("start mdns discover service: {service_type}")
+                    log::debug!("start mdns discover service: {service_type}")
                 },
                 mdns_sd::ServiceEvent::ServiceFound(service_type, _full_name) => {
-                    log::info!("found service: {service_type}")
+                    log::debug!("found service: {service_type}")
                 },
                 mdns_sd::ServiceEvent::ServiceResolved(resolved_service) => {
                     let device = service_resolve_handler(resolved_service);
                     if let Some(device) = device {
                         devices_arc.lock().await.push(device.clone());
-                        log::info!("get device: {:?}", device);
+                        log::debug!("get device: {:?}", device);
                         let _ = emit::found_device(&device);
                     } else {
                         continue;
@@ -268,7 +269,6 @@ pub async fn start_connection(
     match connect_device(device, window.clone(), current_devices).await {
         Ok(()) => {
             log::info!("设备连接成功");
-            // 可选：发送成功事件
             let _ = emit::connect_success();
             Ok(true)
         },
@@ -298,13 +298,17 @@ pub async fn disconnect_device(
     state: State<'_, ManagedState>,
     device: DiscoverDevice,
 ) -> Result<(), String> {
-    let mut connected_devices = state.current_devices.lock().await;
-    if !connected_devices.contains(&device) {
-        return Err("设备未连接".to_string());
+    //检查设备是否存在
+    {
+        let connected_devices = state.current_devices.lock().await;
+        if !connected_devices.contains(&device) {
+            return Err("设备未连接".to_string());
+        }
     }
-    let device_address = device.address.to_string();
-    // 执行断开连接
+
     let client_index = find_quic_client_index(&device).await;
+    info!("client_index: {:?}", client_index);
+
     if let Some(client_index) = client_index {
         let mut clients = QUIC_CLIENTS.get().unwrap().lock().await;
         let current_client = clients.get_mut(client_index).ok_or("指定客户端不存在")?;
@@ -313,22 +317,17 @@ pub async fn disconnect_device(
             log::error!("{}", s);
             s.to_string()
         })?;
-        // 移除设备
-        connected_devices.retain(|dev| dev != &device);
+
+        // 从全局客户端列表中移除
         clients.retain(|client| {
             client.remote_host().unwrap_or_default() != device.address.to_string()
         });
+        info!("断开连接{}成功", device.address);
     }
 
-    // 重新获取锁进行清理
+    // 最后统一清理 current_devices
     let mut connected_devices = state.current_devices.lock().await;
     connected_devices.retain(|dev| dev != &device);
-
-    // 从全局客户端列表中移除
-    if let Some(quic_clients) = QUIC_CLIENTS.get() {
-        let mut clients = quic_clients.lock().await;
-        clients.retain(|client| client.remote_host().unwrap_or_default() != device_address);
-    }
 
     Ok(())
 }

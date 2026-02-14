@@ -17,13 +17,18 @@ export class Device {
   ) {}
 
   async connect() {
-    startConnection(this).then((success) => {
-      if (success) {
-        showToast("连接成功");
-      } else {
+    startConnection(this)
+      .then((success) => {
+        if (success) {
+          showToast("连接成功");
+        } else {
+          showToast("连接失败");
+        }
+      })
+      .catch((error) => {
+        console.error("连接设备时发生错误:", error);
         showToast("连接失败");
-      }
-    });
+      });
   }
 
   async disconnect() {

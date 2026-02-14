@@ -94,7 +94,6 @@ onMounted(() => {
       const moved_touches = getMovedTouches(event);
       const front_touches = touches_to_front(moved_touches, TouchStatus.Move);
       deviceStore.sendTouchPointsConnected(front_touches);
-      console.log("moving", front_touches);
     });
     controlRef.value.addEventListener("touchcancel", (event) => {
       // event.preventDefault();
