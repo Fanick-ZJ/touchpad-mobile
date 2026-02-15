@@ -39,7 +39,7 @@ quinn = { workspace = true }
 prost = { workspace = true }
 tauri-plugin-notification = "2"
 tauri-plugin-toast = "0.0.2"
-tauri-plugin-fullscreen = { git = "https://github.com/Fanick-ZJ/tauri-plugin-fullscreen.git", branch = "main" }
+tauri-plugin-orientation = { git = "https://github.com/Fanick-ZJ/tauri-plugin-orientation.git", branch = "main" }
 
 # self
 shared-utils = { workspace = true }

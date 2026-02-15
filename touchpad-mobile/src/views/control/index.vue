@@ -1,13 +1,15 @@
 <script setup lang="ts">
-import { ref, onMounted } from "vue";
-import { TouchStatus, TouchEventTypes, FrontTouchPoint } from "@/ipc/types";
-import { sendTouchPoints } from "@/ipc/command";
-import { full, FullScreenMode } from "tauri-plugin-fullscreen-api";
-import { Device, useDeviceStore } from "@/store/device";
+import { ref, onMounted, onBeforeUnmount } from "vue";
+import { TouchStatus, FrontTouchPoint } from "@/ipc/types";
+import {
+  Orientation,
+  restoreOrientation,
+  setOrientation,
+} from "tauri-plugin-orientation-api";
+import { useDeviceStore } from "@/store/device";
+import { onBeforeRouteLeave } from "vue-router";
 
 const controlRef = ref<HTMLElement | null>(null);
-const touchStatus = ref<TouchStatus | null>(null);
-const touchType = ref<TouchEventTypes | null>(null);
 
 const deviceStore = useDeviceStore();
 
@@ -73,9 +75,21 @@ const touches_to_front = (
   return front_touches;
 };
 
+onBeforeRouteLeave(() => {
+  setOrientation({
+    orientation: Orientation.Portrait,
+    hideNavigationBar: false,
+    hideStatusBar: false,
+  });
+});
+
 onMounted(() => {
   // 全屏显示
-  full(FullScreenMode.LandSpace);
+  setOrientation({
+    orientation: Orientation.SensorLandscape,
+    hideNavigationBar: true,
+    hideStatusBar: true,
+  });
   if (controlRef.value) {
     controlRef.value.addEventListener("touchstart", (event) => {
       event.preventDefault();

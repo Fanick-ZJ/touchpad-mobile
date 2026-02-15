@@ -38,9 +38,9 @@ importers:
       tailwindcss:
         specifier: ^4.1.18
         version: 4.1.18
-      tauri-plugin-fullscreen-api:
-        specifier: github:Fanick-zj/tauri-plugin-fullscreen#build
-        version: https://codeload.github.com/Fanick-zj/tauri-plugin-fullscreen/tar.gz/0ce455ddebd18d742a97e589480cec410ebcf608
+      tauri-plugin-orientation-api:
+        specifier: github:Fanick-zj/tauri-plugin-orientation#build
+        version: https://codeload.github.com/Fanick-zj/tauri-plugin-orientation/tar.gz/3166e616af62891616c880578f955373c434b5ed
       vue:
         specifier: ^3.5.13
         version: 3.5.26(typescript@5.6.3)
@@ -1486,8 +1486,8 @@ packages:
     resolution: {integrity: sha512-g9ljZiwki/LfxmQADO3dEY1CbpmXT5Hm2fJ+QaGKwSXUylMybePR7/67YW7jOrrvjEgL1Fmz5kzyAjWVWLlucg==}
     engines: {node: '>=6'}
 
-  tauri-plugin-fullscreen-api@https://codeload.github.com/Fanick-zj/tauri-plugin-fullscreen/tar.gz/0ce455ddebd18d742a97e589480cec410ebcf608:
-    resolution: {tarball: https://codeload.github.com/Fanick-zj/tauri-plugin-fullscreen/tar.gz/0ce455ddebd18d742a97e589480cec410ebcf608}
+  tauri-plugin-orientation-api@https://codeload.github.com/Fanick-zj/tauri-plugin-orientation/tar.gz/3166e616af62891616c880578f955373c434b5ed:
+    resolution: {tarball: https://codeload.github.com/Fanick-zj/tauri-plugin-orientation/tar.gz/3166e616af62891616c880578f955373c434b5ed}
     version: 0.1.0
 
   tinyglobby@0.2.15:
@@ -2908,7 +2908,7 @@ snapshots:
 
   tapable@2.3.0: {}
 
-  tauri-plugin-fullscreen-api@https://codeload.github.com/Fanick-zj/tauri-plugin-fullscreen/tar.gz/0ce455ddebd18d742a97e589480cec410ebcf608:
+  tauri-plugin-orientation-api@https://codeload.github.com/Fanick-zj/tauri-plugin-orientation/tar.gz/3166e616af62891616c880578f955373c434b5ed:
     dependencies:
       '@tauri-apps/api': 2.9.1
 

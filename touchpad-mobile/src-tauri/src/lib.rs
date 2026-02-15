@@ -42,7 +42,7 @@ pub fn run() {
         })
         .plugin(tauri_plugin_os::init())
         .plugin(tauri_plugin_toast::init())
-        .plugin(tauri_plugin_fullscreen::init())
+        .plugin(tauri_plugin_orientation::init())
         .plugin(
             tauri_plugin_log::Builder::new()
                 .targets(log_targets)

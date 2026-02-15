@@ -5287,19 +5287,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "tauri-plugin-fullscreen"
-version = "0.1.0"
-source = "git+https://github.com/Fanick-ZJ/tauri-plugin-fullscreen.git?branch=main#eefd4586cb774138c447cd936a888cd80adc2c9e"
-dependencies = [
- "schemars 0.8.22",
- "serde",
- "serde_repr",
- "tauri",
- "tauri-plugin",
- "thiserror 2.0.17",
-]
-
-[[package]]
 name = "tauri-plugin-log"
 version = "2.7.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -5360,6 +5347,19 @@ dependencies = [
  "url",
  "windows",
  "zbus",
+]
+
+[[package]]
+name = "tauri-plugin-orientation"
+version = "0.1.0"
+source = "git+https://github.com/Fanick-ZJ/tauri-plugin-orientation.git?branch=main#4df913da18c82eafb3bf30f15eed4f879aacd185"
+dependencies = [
+ "schemars 0.8.22",
+ "serde",
+ "serde_repr",
+ "tauri",
+ "tauri-plugin",
+ "thiserror 2.0.17",
 ]
 
 [[package]]
@@ -5801,10 +5801,10 @@ dependencies = [
  "shared-utils",
  "tauri",
  "tauri-build",
- "tauri-plugin-fullscreen",
  "tauri-plugin-log",
  "tauri-plugin-notification",
  "tauri-plugin-opener",
+ "tauri-plugin-orientation",
  "tauri-plugin-os",
  "tauri-plugin-toast",
  "thiserror 2.0.17",
