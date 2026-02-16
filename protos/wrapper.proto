@@ -2,19 +2,21 @@ syntax = "proto3";
 package touchpad.v1;
 
 import "discover_validation.proto";
-import "touch_packet.proto";
 import "handshake.proto";
 import "heartbeat.proto";
 import "register_device.proto";
+import "setting.proto";
+import "touch_packet.proto";
 
 message Wrapper {
   oneof payload {
-    Welcome     welcome           = 1;
-    TouchPacket touch_packet      = 2;
-    HeartBeat   heart_beat        = 3;
+    Welcome welcome = 1;
+    TouchPacket touch_packet = 2;
+    HeartBeat heart_beat = 3;
     DiscoverValidation discover_validation = 4;
     Exit exit = 5;
     Reject reject = 6;
     RegisterDevice register_device = 7;
+    SettingRequest setting_request = 8;
   }
 }

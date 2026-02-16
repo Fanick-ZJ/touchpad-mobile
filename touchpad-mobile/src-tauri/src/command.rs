@@ -8,7 +8,13 @@ use shared_utils::execute_params;
 use tauri::{State, Window};
 use tokio::net::TcpStream;
 use tokio::sync::Mutex;
-use touchpad_proto::{codec::ProtoStream, proto};
+use touchpad_proto::{
+    codec::ProtoStream,
+    proto::{
+        self,
+        v1::{setting_request, SettingRequest, TuneSetting},
+    },
+};
 use xxhash_rust::xxh3::xxh3_64;
 
 use crate::{
@@ -16,7 +22,7 @@ use crate::{
     error::ConnectionError,
     quic::QuicClient,
     state::{DiscoverDevice, ManagedState},
-    types::{FrontTouchPoint, TouchPointStatus},
+    types::{FrontTouchPoint, FrontTuneSetting, TouchPointStatus},
     QUIC_CLIENTS,
 };
 
@@ -388,4 +394,27 @@ pub async fn send_touch_points(
     } else {
         Err("未找到指定设备的客户端".to_string())
     }
+}
+
+#[tauri::command]
+pub async fn send_tune_setting(
+    device: DiscoverDevice,
+    setting: FrontTuneSetting,
+) -> Result<(), String> {
+    let client_index = find_quic_client_index(&device).await;
+    if let Some(client_index) = client_index {
+        let mut clients = QUIC_CLIENTS.get().unwrap().lock().await;
+        let current_client = clients.get_mut(client_index).ok_or("指定客户端不存在")?;
+        let setting_request = SettingRequest {
+            value: Some(setting_request::Value::TuneSetting(TuneSetting {
+                sensitivity: setting.sensitivity,
+                invert_x: setting.invert_x,
+                invert_y: setting.invert_y,
+            })),
+        };
+        if let Err(e) = current_client.send(&setting_request).await {
+            return Err(format!("发送调整设置失败: {}", e));
+        }
+    }
+    Ok(())
 }

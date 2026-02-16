@@ -1,6 +1,6 @@
 import { Device } from "@/store/device";
 import { invoke } from "@tauri-apps/api/core";
-import { FrontTouchPoint } from "./types";
+import { FrontTouchPoint, TuneSetting } from "./types";
 
 const startDiscoverService = async () => {
   await invoke("start_discover_service");
@@ -22,9 +22,24 @@ const sendTouchPoints = async (
   return await invoke("send_touch_points", { device, touchPoints: points });
 };
 
+const sendTuneSetting = async (
+  device: Device,
+  setting: TuneSetting,
+): Promise<Boolean> => {
+  return await invoke("send_tune_setting", {
+    device,
+    setting: {
+      invert_x: setting.invertX,
+      invert_y: setting.invertY,
+      sensitivity: setting.sensitivity,
+    },
+  });
+};
+
 export {
   startDiscoverService,
   startConnection,
   disconnectDevice,
   sendTouchPoints,
+  sendTuneSetting,
 };

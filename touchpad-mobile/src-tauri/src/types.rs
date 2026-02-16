@@ -16,3 +16,10 @@ pub struct FrontTouchPoint {
     pub x: u32,
     pub y: u32,
 }
+
+#[derive(Serialize, Deserialize, PartialEq, Debug)]
+pub struct FrontTuneSetting {
+    pub sensitivity: f32,
+    pub invert_x: bool,
+    pub invert_y: bool,
+}

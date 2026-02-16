@@ -20,7 +20,7 @@ use tokio::sync::{
 };
 use touchpad_proto::{
     codec::ProtoStream,
-    proto::v1::{TouchEventType, wrapper::Payload},
+    proto::v1::{TouchEventType, TuneSetting, setting_request, wrapper::Payload},
 };
 use tracing::{debug, error, info};
 
@@ -67,13 +67,19 @@ enum ShutdownSignal {
     ConnectionClose(usize),
 }
 
+#[derive(Debug)]
+enum TouchpadEvent {
+    TouchPoint(TouchPoint),
+    TuneSetting(TuneSetting),
+}
+
 struct TouchServerChannel {
     /// 关闭通道 (watch::Receiver 可以 clone，不需要 Mutex)
     shutdown_tx: watch::Sender<ShutdownSignal>,
     shutdown_rx: Arc<Mutex<watch::Receiver<ShutdownSignal>>>,
     /// 触摸事件
-    touch_event_tx: mpsc::UnboundedSender<TouchPoint>,
-    touch_event_rx: Arc<Mutex<mpsc::UnboundedReceiver<TouchPoint>>>,
+    touch_event_tx: mpsc::UnboundedSender<TouchpadEvent>,
+    touch_event_rx: Arc<Mutex<mpsc::UnboundedReceiver<TouchpadEvent>>>,
     /// 延迟计算
     latency_tx: Option<mpsc::UnboundedSender<LatencyDisplay>>,
     latency_rx: Option<Arc<Mutex<mpsc::UnboundedReceiver<LatencyDisplay>>>>,
@@ -117,7 +123,7 @@ impl TouchServer {
         let ip_addr = SocketAddr::new(server_core_kit::inner_const::ANY_V4, config.server_port);
         let endpoint = Endpoint::server(server_config, ip_addr)?;
         info!("listening on {}", endpoint.local_addr()?);
-        let touch_driver = match Driver::new(1920, 1080) {
+        let touch_driver = match Driver::new(8192, 8192) {
             Ok(driver) => Arc::new(std::sync::Mutex::new(driver)),
             Err(err) => {
                 error!("Failed to initialize touch driver: {}", err);
@@ -161,9 +167,6 @@ impl TouchServer {
     async fn touch_event_processor(self: &Arc<Self>) {
         // Clone watch::Receiver（可以 clone，不需要 Mutex）
         let mut shutdown_rx = self.server_channel.shutdown_tx.subscribe();
-
-        // 对于 mpsc::Receiver，我们使用 Mutex 但在分支内部获取锁
-        let mut buffer = Vec::with_capacity(64);
         loop {
             tokio::select! {
                 _ = shutdown_rx.changed() => {
@@ -180,31 +183,25 @@ impl TouchServer {
                         Some(event) => event,
                         None => break, // channel 关闭
                     };
-
-                    buffer.push(event);
-                    // 收集更多事件（非阻塞）- 尝试获取锁，如果失败就跳过
-                    for _ in 0..63 {
-                        match self.server_channel.touch_event_rx.try_lock() {
-                            Ok(mut rx) => match rx.try_recv() {
-                                Ok(event) => buffer.push(event),
-                                Err(_) => break,
-                            },
-                            Err(_) => break,
-                        }
-                    }
-
-                    // 批量处理 - 使用 std::sync::Mutex，快速且不跨 await
-                    if let Ok(mut driver) = self.touch_driver.lock() {
-                        for point in &buffer {
-                            debug!("Emitting touch event: {:?}", point);
-                            if let Err(e) = driver.emit_multitouch(std::slice::from_ref(point)) {
-                                error!("Failed to emit touch event: {}", e);
+                    match event {
+                        TouchpadEvent::TouchPoint(touch_point) => {
+                            if let Ok(mut driver) = self.touch_driver.lock() {
+                                if let Err(e) = driver.emit_multitouch(&vec![touch_point]) {
+                                    error!("Failed to emit touch event: {}", e);
+                                }
                             }
-                        }
+                        },
+                        TouchpadEvent::TuneSetting(tune_setting) => {
+                            info!("tune setting: {:?}", tune_setting);
+                            if let Ok(mut driver) = self.touch_driver.lock() {
+                                driver.set_invert_x(tune_setting.invert_x);
+                                driver.set_invert_y(tune_setting.invert_y);
+                                driver.set_sensitivity(tune_setting.sensitivity);
+                            }
+                        },
                     }
                 }
             }
-            buffer.clear();
         }
     }
 
@@ -420,7 +417,7 @@ struct ConnectedExector {
     conn: quinn::Connection,
     done: bool,
     connected_device: Arc<Mutex<HashMap<IpAddr, Device>>>,
-    touch_event_tx: mpsc::UnboundedSender<TouchPoint>,
+    touch_event_tx: mpsc::UnboundedSender<TouchpadEvent>,
     /// 停止信号
     stop_signal: watch::Receiver<ShutdownSignal>,
     /// 延迟跟踪器
@@ -434,7 +431,7 @@ impl ConnectedExector {
         conn: quinn::Connection,
         connected_device: Arc<Mutex<HashMap<IpAddr, Device>>>,
         stop_signal: watch::Receiver<ShutdownSignal>,
-        touch_event_tx: mpsc::UnboundedSender<TouchPoint>,
+        touch_event_tx: mpsc::UnboundedSender<TouchpadEvent>,
         latency_tracker: Option<Arc<std::sync::Mutex<RealtimeLatencyTracker>>>,
         latency_tx: Option<mpsc::UnboundedSender<LatencyDisplay>>,
     ) -> Self {
@@ -572,9 +569,24 @@ impl ConnectedExector {
                     };
 
                     // 非阻塞发送，如果 channel 满了则丢弃（避免阻塞网络处理）
-                    let _ = self.touch_event_tx.send(touch_point);
+                    let _ = self
+                        .touch_event_tx
+                        .send(TouchpadEvent::TouchPoint(touch_point));
                 }
                 Ok(true)
+            },
+            Payload::SettingRequest(setting) => {
+                if let Some(value) = setting.value {
+                    let _ = match value {
+                        setting_request::Value::TuneSetting(tune_setting) => self
+                            .touch_event_tx
+                            .send(TouchpadEvent::TuneSetting(tune_setting)),
+                    };
+                    Ok(true)
+                } else {
+                    error!("Invalid setting request");
+                    Ok(true)
+                }
             },
             Payload::Exit(_exit) => {
                 info!("Exiting connection: {:?}", self.conn.remote_address());

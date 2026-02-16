@@ -2,8 +2,9 @@ import {
   startConnection,
   disconnectDevice,
   sendTouchPoints,
+  sendTuneSetting,
 } from "@/ipc/command";
-import { DiscoverDevice, FrontTouchPoint } from "@/ipc/types";
+import { DiscoverDevice, FrontTouchPoint, TuneSetting } from "@/ipc/types";
 import { showToast } from "@bling-yshs/tauri-plugin-toast";
 import { defineStore } from "pinia";
 
@@ -80,6 +81,12 @@ export const useDeviceStore = defineStore("device", {
     sendTouchPointsConnected(points: FrontTouchPoint[]) {
       for (const device of this.controledDevices) {
         sendTouchPoints(device, points);
+      }
+    },
+    sendTuneSetting(setting: TuneSetting) {
+      console.log(setting);
+      for (const device of this.controledDevices) {
+        sendTuneSetting(device, setting);
       }
     },
   },

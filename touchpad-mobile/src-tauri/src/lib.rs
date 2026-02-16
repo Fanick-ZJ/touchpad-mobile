@@ -12,8 +12,8 @@ use tokio::sync::Mutex;
 
 use crate::{
     command::{
-        disconnect_device, get_devices, get_language, send_touch_points, start_connection,
-        start_discover_service,
+        disconnect_device, get_devices, get_language, send_touch_points, send_tune_setting,
+        start_connection, start_discover_service,
     },
     quic::QuicClient,
     state::ManagedState,
@@ -34,6 +34,7 @@ pub fn run() {
     ];
     let colors = fern::colors::ColoredLevelConfig::default();
     tauri::Builder::default()
+        .plugin(tauri_plugin_store::Builder::new().build())
         .plugin(tauri_plugin_notification::init())
         .setup(|app| {
             // 存储到全局变量
@@ -68,7 +69,8 @@ pub fn run() {
             get_devices,
             get_language,
             disconnect_device,
-            send_touch_points
+            send_touch_points,
+            send_tune_setting
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

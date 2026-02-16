@@ -6,7 +6,6 @@ use shared_utils::execute_params;
 use std::{
     collections::HashMap,
     net::{IpAddr, SocketAddr},
-    process::Command,
     sync::Arc,
     time::Duration,
 };

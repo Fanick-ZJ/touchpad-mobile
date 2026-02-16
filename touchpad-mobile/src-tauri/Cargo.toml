@@ -44,3 +44,4 @@ tauri-plugin-orientation = { git = "https://github.com/Fanick-ZJ/tauri-plugin-or
 # self
 shared-utils = { workspace = true }
 touchpad-proto = { workspace = true }
+tauri-plugin-store = "2"

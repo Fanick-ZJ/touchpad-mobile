@@ -9,6 +9,7 @@ import "virtual-icons";
 import Vue3TouchEvents, {
   type Vue3TouchEventsOptions,
 } from "vue3-touch-events";
+import { usePersistenceStore } from "@/store/persistence";
 
 const pinia = createPinia();
 const app = createApp(App);
@@ -16,9 +17,26 @@ const app = createApp(App);
 app.use(router);
 app.use(pinia);
 app.use(Varlet);
-app.mount("#app");
 app.use<Vue3TouchEventsOptions>(Vue3TouchEvents, {
   disableClick: false,
   // any other global options...
 });
-initListen();
+
+// 在挂载应用前初始化 store
+const initApp = async () => {
+  try {
+    const persistenceStore = usePersistenceStore();
+    await persistenceStore.ensureInitialized();
+    console.log("Persistence store initialized successfully");
+  } catch (error) {
+    console.error("Failed to initialize persistence store:", error);
+  }
+
+  // 挂载应用
+  app.mount("#app");
+
+  // 初始化监听器
+  initListen();
+};
+
+initApp();

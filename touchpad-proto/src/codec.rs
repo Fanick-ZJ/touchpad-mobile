@@ -9,31 +9,29 @@ use tokio::{
 };
 use tracing::{debug, error};
 
-pub fn wrap<M: Message + 'static>(msg: &M) -> Result<Vec<u8>> {
+pub fn message_wrap<M: Message + 'static>(msg: &M) -> Result<Vec<u8>> {
     use proto::v1::{Wrapper, wrapper::Payload};
 
     let wrapper = Wrapper {
-        payload: Some(
-            if let Some(pb) = (msg as &dyn Any).downcast_ref::<proto::v1::Welcome>() {
-                Payload::Welcome(pb.clone())
-            } else if let Some(pb) = (msg as &dyn Any).downcast_ref::<proto::v1::RegisterDevice>() {
-                Payload::RegisterDevice(pb.clone())
-            } else if let Some(pb) = (msg as &dyn Any).downcast_ref::<proto::v1::Reject>() {
-                Payload::Reject(pb.clone())
-            } else if let Some(pb) = (msg as &dyn Any).downcast_ref::<proto::v1::HeartBeat>() {
-                Payload::HeartBeat(pb.clone())
-            } else if let Some(pb) = (msg as &dyn Any).downcast_ref::<proto::v1::TouchPacket>() {
-                Payload::TouchPacket(pb.clone())
-            } else if let Some(pb) = (msg as &dyn Any).downcast_ref::<proto::v1::Exit>() {
-                Payload::Exit(pb.clone())
-            } else if let Some(pb) =
-                (msg as &dyn Any).downcast_ref::<proto::v1::DiscoverValidation>()
-            {
-                Payload::DiscoverValidation(pb.clone())
-            } else {
-                anyhow::bail!("unsupported message type")
-            },
-        ),
+        payload: Some(if let Some(pb) = (msg as &dyn Any).downcast_ref::<proto::v1::Welcome>() {
+            Payload::Welcome(pb.clone())
+        } else if let Some(pb) = (msg as &dyn Any).downcast_ref::<proto::v1::RegisterDevice>() {
+            Payload::RegisterDevice(pb.clone())
+        } else if let Some(pb) = (msg as &dyn Any).downcast_ref::<proto::v1::Reject>() {
+            Payload::Reject(pb.clone())
+        } else if let Some(pb) = (msg as &dyn Any).downcast_ref::<proto::v1::HeartBeat>() {
+            Payload::HeartBeat(pb.clone())
+        } else if let Some(pb) = (msg as &dyn Any).downcast_ref::<proto::v1::TouchPacket>() {
+            Payload::TouchPacket(pb.clone())
+        } else if let Some(pb) = (msg as &dyn Any).downcast_ref::<proto::v1::Exit>() {
+            Payload::Exit(pb.clone())
+        } else if let Some(pb) = (msg as &dyn Any).downcast_ref::<proto::v1::SettingRequest>() {
+            Payload::SettingRequest(pb.clone())
+        } else if let Some(pb) = (msg as &dyn Any).downcast_ref::<proto::v1::DiscoverValidation>() {
+            Payload::DiscoverValidation(pb.clone())
+        } else {
+            anyhow::bail!("unsupported message type")
+        }),
     };
     Ok(wrapper.encode_to_vec())
 }
@@ -52,7 +50,7 @@ pub fn dewrap(buf: &[u8]) -> Result<Payload> {
 
 /// Encode a protobuf message into a wrapper message with a length prefix.
 pub fn wrap_with_prefix<M: Message + 'static>(msg: &M) -> Result<Vec<u8>> {
-    let data = wrap(msg)?;
+    let data = message_wrap(msg)?;
     return Ok(varint::encode_with_length_prefix(&data));
 }
 
@@ -111,10 +109,7 @@ pub mod varint {
         loop {
             let bytes_read = reader.read(&mut buffer).await?;
             byte_count += 1;
-            debug!(
-                "读取到字节[{}]: 0x{:02X}, 读取字节数: {}",
-                byte_count, buffer[0], bytes_read
-            );
+            debug!("读取到字节[{}]: 0x{:02X}, 读取字节数: {}", byte_count, buffer[0], bytes_read);
 
             if bytes_read == 0 {
                 error!("流意外结束，已读取{}个varint字节", byte_count - 1);
@@ -146,9 +141,7 @@ pub mod varint {
         while total_read < length {
             let bytes_read = reader.read(&mut buffer[total_read..])?;
             if bytes_read == 0 {
-                return Err(anyhow!(
-                    "Unexpected end of stream while reading message bytes"
-                ));
+                return Err(anyhow!("Unexpected end of stream while reading message bytes"));
             }
             total_read += bytes_read;
         }
@@ -166,9 +159,7 @@ pub mod varint {
         while total_read < length {
             let bytes_read = reader.read(&mut buffer[total_read..]).await?;
             if bytes_read == 0 {
-                return Err(anyhow!(
-                    "Unexpected end of stream while reading message bytes"
-                ));
+                return Err(anyhow!("Unexpected end of stream while reading message bytes"));
             }
             total_read += bytes_read;
         }
@@ -239,7 +230,7 @@ impl ProtoStream {
     }
 
     pub async fn send_message<M: Message + 'static>(&mut self, msg: &M) -> Result<()> {
-        let data = varint::encode_with_length_prefix(&wrap(msg)?);
+        let data = varint::encode_with_length_prefix(&message_wrap(msg)?);
         self.writer.write_all(&data).await?;
         self.writer.flush().await?;
         Ok(())

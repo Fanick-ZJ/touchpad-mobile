@@ -23,6 +23,7 @@ export default defineConfig(async () => ({
     }),
   ],
   resolve: {
+    extensions: [".mjs", ".js", ".mts", ".ts", ".jsx", ".tsx", ".json", ".vue"],
     alias: {
       "@": path.resolve("./src"),
     },

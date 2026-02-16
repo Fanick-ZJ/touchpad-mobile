@@ -1,0 +1,14 @@
+syntax = "proto3";
+package touchpad.v1;
+
+message SettingRequest {
+  oneof value {
+    TuneSetting tune_setting = 1;
+  }
+}
+
+message TuneSetting {
+  float sensitivity = 1;
+  bool invert_x = 2;
+  bool invert_y = 3;
+}

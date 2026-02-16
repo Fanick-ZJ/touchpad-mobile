@@ -1,7 +1,7 @@
 /**
  * 触摸事件类型
  */
-const TouchEventTypes = {
+export const TouchEventTypes = {
   START: "start",
   END: "end",
   MOVE: "move",
@@ -9,17 +9,18 @@ const TouchEventTypes = {
   JOINED: "joined", //新的触控点加入
   LEFT: "left", //触控点离开
 } as const;
-type TouchEventTypes = (typeof TouchEventTypes)[keyof typeof TouchEventTypes];
+export type TouchEventTypes =
+  (typeof TouchEventTypes)[keyof typeof TouchEventTypes];
 
 /**
  * 触摸状态
  */
-const TouchStatus = {
+export const TouchStatus = {
   Add: 0, //触控正式开始
   Move: 1, //触控移动中
   Leave: 2, //触控结束
 } as const;
-type TouchStatus = (typeof TouchStatus)[keyof typeof TouchStatus];
+export type TouchStatus = (typeof TouchStatus)[keyof typeof TouchStatus];
 
 /**
  * 前端触控点
@@ -89,4 +90,8 @@ export type EventListener<Event extends keyof IPCEventPayloads> = (
   payload: IPCEventPayloads[Event],
 ) => void | Promise<void>;
 
-export { TouchEventTypes, TouchStatus };
+export interface TuneSetting {
+  sensitivity: number;
+  invertY: boolean;
+  invertX: boolean;
+}

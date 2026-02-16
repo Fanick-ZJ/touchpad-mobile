@@ -11,6 +11,10 @@
     "notification:default",
     "toast:allow-show-toast",
     "orientation:default",
+    "store:allow-get",
+    "store:allow-set",
+    "store:allow-save",
+    "store:allow-load",
     {
       "identifier": "notification:allow-is-permission-granted",
       "allow": [
@@ -19,7 +23,8 @@
           "url": "http://localhost:1420"
         }
       ]
-    }
+    },
+    "store:default"
   ],
   "platforms": ["android"]
 }
