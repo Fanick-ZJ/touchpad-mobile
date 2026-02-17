@@ -125,7 +125,10 @@ onMounted(() => {
     touchpadRef.value.addEventListener(
       "touchcancel",
       (event) => {
-        // 不需要处理
+        // 注销所有的触控事件
+        const touches = getRemovedTouches(event);
+        const front_touches = touches_to_front(touches, TouchStatus.Leave);
+        deviceStore.sendTouchPointsConnected(front_touches);
       },
       { passive: true },
     );
@@ -184,7 +187,7 @@ const confirmTuneHandler = () => {
           <var-slider
             v-model="oldTuneData.sensitivity"
             min="0.1"
-            max="20"
+            max="50"
             step="0.1"
           />
           <span>反转Y轴</span>

@@ -5,6 +5,6 @@ login_port: 8522
 # 后端 QUIC 服务端口 (默认 8523)
 backend_port: 8521
 log_level: info
-ip: 10.201.159.173
+ip: 10.201.159.124
 # cert_pem: /home/fanick/work/rust/touchpad/certs/certificate.pem
 # key_pem: /home/fanick/work/rust/touchpad/certs/private.key.pem
