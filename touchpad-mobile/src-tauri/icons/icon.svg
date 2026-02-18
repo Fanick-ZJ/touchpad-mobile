@@ -1,0 +1,49 @@
+<svg width="1024" height="1024" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg">
+  <!-- 渐变背景（可选：实际使用建议删除背景层，保留透明） -->
+  <defs>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#f8f9fa" />
+      <stop offset="100%" stop-color="#e9ecef" />
+    </linearGradient>
+    <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="8" result="blur"/>
+      <feFlood flood-color="#4A90E2" flood-opacity="0.3" result="glowColor"/>
+      <feComposite in="glowColor" in2="blur" operator="in" result="softGlow"/>
+      <feMerge>
+        <feMergeNode in="softGlow"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+
+  <!-- 背景（实际应用图标建议删除此层，保持透明） -->
+  <rect width="1024" height="1024" rx="160" fill="url(#bgGrad)" opacity="0.4"/>
+
+  <!-- 触控板主体（深灰圆角矩形） -->
+  <rect x="162" y="262" width="700" height="500" rx="60"
+        fill="#2D2D2D"
+        stroke="#464646"
+        stroke-width="8"
+        filter="drop-shadow(0 10px 20px rgba(0,0,0,0.25))"/>
+
+  <!-- 滑动轨迹（三段渐隐圆点） -->
+  <circle cx="680" cy="580" r="18" fill="#4A90E2" opacity="0.6"/>
+  <circle cx="740" cy="630" r="14" fill="#4A90E2" opacity="0.4"/>
+  <circle cx="790" cy="675" r="10" fill="#4A90E2" opacity="0.25"/>
+
+  <!-- 中心触摸点（带发光效果） -->
+  <circle cx="512" cy="512" r="85"
+          fill="#4A90E2"
+          opacity="0.88"
+          filter="url(#glow)"/>
+
+  <!-- 微光高光 -->
+  <circle cx="495" cy="495" r="25" fill="white" opacity="0.15"/>
+
+  <!-- 应用名称（仅预览用，实际图标应移除文字） -->
+  <text x="512" y="880" font-family="Segoe UI, system-ui, sans-serif"
+        font-size="68" font-weight="600"
+        fill="#2D2D2D" text-anchor="middle" opacity="0.85">
+    touchpad-mobile
+  </text>
+</svg>

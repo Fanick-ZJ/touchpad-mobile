@@ -27,10 +27,12 @@ onMounted(async () => {
 
 <template>
   <Page title="发现">
-    <div class="flex flex-col grap-2">
-      <template v-for="device in deviceStore.devices" :key="device.address">
-        <DiscoverDevice :device="device"
-      /></template>
+    <div
+      class="flex flex-col grap-2"
+      v-for="device in deviceStore.devices"
+      :key="device.address"
+    >
+      <DiscoverDevice :device="device" />
     </div>
   </Page>
 </template>

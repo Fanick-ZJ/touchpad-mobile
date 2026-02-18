@@ -79,7 +79,6 @@ const emit = defineEmits<{
           <var-cell v-if="isCurrentDevice" @click="deviceDisconnect"
             >退出连接</var-cell
           >
-          <var-cell>拉黑</var-cell>
         </template>
       </var-menu>
     </var-card>

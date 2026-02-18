@@ -10,8 +10,8 @@ watch(
     console.log(`Active tab changed to: ${newValue}`);
     if (newValue === "control") {
       router.push("/control");
-    } else if (newValue === "settings") {
-      router.push("/home/settings");
+    } else if (newValue === "about") {
+      router.push("/home/about");
     } else if (newValue === "discover") {
       router.push("/home/discover");
     }
@@ -26,8 +26,8 @@ watch(
       active.value = "discover";
     } else if (newValue === "/control") {
       active.value = "control";
-    } else if (newValue === "/home/settings") {
-      active.value = "settings";
+    } else if (newValue === "/home/about") {
+      active.value = "about";
     }
   },
 );
@@ -55,13 +55,18 @@ watch(
         </template>
       </var-bottom-navigation-item>
       <var-bottom-navigation-item
-        label="设置"
-        name="settings"
-        icon="setting"
+        label="关于"
+        name="about"
+        namespace="i"
+        icon="information-outline"
         style="--ripple-color: transparent"
       >
         <template #icon>
-          <var-icon size="24px" namespace="i" name="cogs" /> </template
+          <var-icon
+            size="24px"
+            namespace="i"
+            name="information-outline"
+          /> </template
       ></var-bottom-navigation-item>
     </var-bottom-navigation>
   </div>

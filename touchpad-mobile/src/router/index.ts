@@ -18,9 +18,9 @@ export const router = createRouter({
           component: () => import("@/views/home/discover/index.vue"),
         },
         {
-          name: "settings",
-          path: "/home/settings",
-          component: () => import("@/views/home/settings/index.vue"),
+          name: "about",
+          path: "/home/about",
+          component: () => import("@/views/home/about/index.vue"),
         },
       ],
     },
